@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>多項式加法訓練艙</title>
+<meta name="description" content="國二多項式加法互動練習：無限出題、缺項補零、升冪降冪打散，未來科技風介面。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#060a16;
+    --bg-2:#0a1024;
+    --grid-line:rgba(75,196,255,0.07);
+    --panel:#0d1530;
+    --panel-2:#101a3a;
+    --panel-border:rgba(86,214,255,0.35);
+    --panel-border-soft:rgba(86,214,255,0.15);
+    --accent:#4fd8ff;
+    --accent-strong:#8ff0ff;
+    --accent-2:#ffb454;
+    --text:#e7f1ff;
+    --text-dim:#7c8fb8;
+    --text-faint:#4c597d;
+    --success:#3fe0a5;
+    --success-soft:rgba(63,224,165,0.14);
+    --danger:#ff5d7a;
+    --danger-soft:rgba(255,93,122,0.14);
+    --zero-fill:#ffb454;
+    color-scheme: dark;
+  }
+
+  *{ box-sizing:border-box; }
+
+  html,body{
+    margin:0;
+    min-height:100%;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Noto Sans TC', 'Chakra Petch', sans-serif;
+  }
+
+  body{
+    padding:clamp(16px, 4vw, 40px) 16px 60px;
+    display:flex;
+    justify-content:center;
+    position:relative;
+    overflow-x:hidden;
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+      radial-gradient(ellipse at 20% -10%, rgba(79,216,255,0.14), transparent 55%),
+      radial-gradient(ellipse at 85% 10%, rgba(255,180,84,0.08), transparent 45%),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+    background-size: 42px 42px, 42px 42px, auto, auto, auto;
+  }
+
+  @media (prefers-reduced-motion: no-preference){
+    body::before{
+      content:'';
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      background:linear-gradient(180deg, transparent 0%, rgba(79,216,255,0.05) 50%, transparent 100%);
+      background-size: 100% 220px;
+      animation: scan 7s linear infinite;
+      z-index:0;
+    }
+  }
+  @keyframes scan{
+    0%{ background-position: 0 -220px; }
+    100%{ background-position: 0 110vh; }
+  }
+
+  .stage{
+    position:relative;
+    z-index:1;
+    width:100%;
+    max-width:660px;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+  }
+
+  /* ---------- Header ---------- */
+  .hud-header{
+    position:relative;
+    border:1px solid var(--panel-border);
+    background:linear-gradient(160deg, var(--panel), var(--panel-2));
+    border-radius:14px;
+    padding:18px 20px;
+    box-shadow: 0 0 0 1px rgba(79,216,255,0.05), 0 18px 40px -20px rgba(0,0,0,0.7);
+  }
+  .corner{
+    position:absolute;
+    width:16px;
+    height:16px;
+    border:2px solid var(--accent);
+    opacity:0.85;
+  }
+  .corner.tl{ top:-1px; left:-1px; border-right:none; border-bottom:none; border-top-left-radius:6px; }
+  .corner.tr{ top:-1px; right:-1px; border-left:none; border-bottom:none; border-top-right-radius:6px; }
+  .corner.bl{ bottom:-1px; left:-1px; border-right:none; border-top:none; border-bottom-left-radius:6px; }
+  .corner.br{ bottom:-1px; right:-1px; border-left:none; border-top:none; border-bottom-right-radius:6px; }
+
+  .eyebrow{
+    font-family:'Chakra Petch', sans-serif;
+    font-size:11px;
+    letter-spacing:0.32em;
+    text-transform:uppercase;
+    color:var(--accent);
+    opacity:0.8;
+    margin:0 0 6px;
+  }
+  h1{
+    margin:0 0 4px;
+    font-family:'Chakra Petch', 'Noto Sans TC', sans-serif;
+    font-weight:700;
+    font-size:clamp(22px, 5vw, 30px);
+    letter-spacing:0.02em;
+    text-shadow: 0 0 18px rgba(79,216,255,0.45);
+    text-wrap:balance;
+  }
+  .subtitle{
+    margin:0;
+    color:var(--text-dim);
+    font-size:13.5px;
+    line-height:1.6;
+  }
+
+  .stats{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:10px;
+    margin-top:16px;
+  }
+  .stat{
+    border:1px solid var(--panel-border-soft);
+    background:rgba(6,10,22,0.5);
+    border-radius:10px;
+    padding:9px 10px;
+    text-align:center;
+  }
+  .stat-label{
+    font-size:10.5px;
+    color:var(--text-faint);
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    font-family:'Chakra Petch', sans-serif;
+  }
+  .stat-value{
+    font-family:'JetBrains Mono', monospace;
+    font-size:19px;
+    font-weight:700;
+    color:var(--accent-strong);
+    font-variant-numeric: tabular-nums;
+    margin-top:2px;
+  }
+
+  /* ---------- Tip toggle ---------- */
+  .tip-toggle{
+    align-self:flex-start;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    background:transparent;
+    border:1px solid var(--panel-border-soft);
+    color:var(--accent);
+    font-family:'Chakra Petch', sans-serif;
+    font-size:12.5px;
+    letter-spacing:0.05em;
+    padding:8px 14px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .tip-toggle:hover{ border-color:var(--accent); background:rgba(79,216,255,0.06); }
+  .tip-toggle:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+  .tip-panel{
+    border:1px solid var(--panel-border-soft);
+    background:var(--panel);
+    border-radius:12px;
+    padding:16px 18px;
+    font-size:13.5px;
+    line-height:1.75;
+    color:var(--text-dim);
+  }
+  .tip-panel[hidden]{ display:none; }
+  .tip-panel strong{ color:var(--accent-strong); font-weight:700; }
+  .tip-panel ol{ margin:8px 0 0; padding-left:1.2em; }
+  .tip-panel li + li{ margin-top:8px; }
+
+  /* ---------- Problem panel ---------- */
+  .panel{
+    position:relative;
+    border:1px solid var(--panel-border);
+    background:linear-gradient(160deg, var(--panel), var(--panel-2));
+    border-radius:16px;
+    padding:24px 20px;
+    box-shadow: 0 0 0 1px rgba(79,216,255,0.05), 0 24px 50px -24px rgba(0,0,0,0.75);
+  }
+
+  .panel-title{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-family:'Chakra Petch', sans-serif;
+    font-size:12px;
+    letter-spacing:0.24em;
+    text-transform:uppercase;
+    color:var(--text-faint);
+    margin:0 0 16px;
+  }
+  .panel-title .dot{
+    width:7px; height:7px; border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 10px var(--accent);
+  }
+
+  .poly-stack{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    align-items:stretch;
+  }
+  .poly-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .poly-tag{
+    flex:none;
+    width:34px;
+    height:34px;
+    border-radius:8px;
+    border:1px solid var(--panel-border);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Chakra Petch', sans-serif;
+    font-weight:700;
+    color:var(--accent-strong);
+    background:rgba(79,216,255,0.06);
+  }
+  .poly-card{
+    flex:1;
+    min-width:0;
+    border:1px solid var(--panel-border-soft);
+    background:rgba(6,10,22,0.55);
+    border-radius:10px;
+    padding:12px 16px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:clamp(16px, 4.4vw, 21px);
+    letter-spacing:0.01em;
+    overflow-wrap:break-word;
+    word-break:break-word;
+  }
+  .poly-card .term, .poly-card .sign{ white-space:nowrap; }
+  .poly-card .order-flag{
+    display:block;
+    font-family:'Chakra Petch', sans-serif;
+    font-size:10px;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    color:var(--accent-2);
+    margin-bottom:4px;
+    white-space:normal;
+  }
+  .term{ color:var(--text); }
+  .sign{ display:inline-block; padding:0 5px; color:var(--text-dim); }
+  .sign.neg{ color:var(--danger); }
+  .sign.pos{ color:var(--accent); }
+
+  .plus-divider{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    color:var(--text-faint);
+    font-family:'Chakra Petch', sans-serif;
+    font-size:12px;
+    letter-spacing:0.2em;
+    margin:2px 0;
+  }
+  .plus-divider .line{ flex:1; height:1px; background:var(--panel-border-soft); }
+
+  /* ---------- Answer inputs ---------- */
+  .answer-block{
+    margin-top:22px;
+    border-top:1px dashed var(--panel-border-soft);
+    padding-top:20px;
+  }
+  .answer-label{
+    font-family:'Chakra Petch', sans-serif;
+    font-size:12px;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    color:var(--text-faint);
+    margin:0 0 12px;
+  }
+  .coef-grid{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:10px;
+  }
+  .coef-cell{ display:flex; flex-direction:column; gap:6px; }
+  .coef-cell label{
+    text-align:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size:13px;
+    color:var(--text-dim);
+  }
+  .coef-cell input{
+    width:100%;
+    background:rgba(6,10,22,0.7);
+    border:1.5px solid var(--panel-border-soft);
+    border-radius:8px;
+    color:var(--accent-strong);
+    font-family:'JetBrains Mono', monospace;
+    font-size:18px;
+    font-weight:700;
+    text-align:center;
+    padding:10px 4px;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  .coef-cell input:focus{
+    outline:none;
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(79,216,255,0.18);
+  }
+  .coef-cell input.is-correct{ border-color:var(--success); box-shadow:0 0 0 3px var(--success-soft); }
+  .coef-cell input.is-wrong{ border-color:var(--danger); box-shadow:0 0 0 3px var(--danger-soft); }
+  .coef-cell input::-webkit-outer-spin-button,
+  .coef-cell input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+  .coef-cell input[type=number]{ -moz-appearance:textfield; }
+
+  .actions{
+    display:flex;
+    gap:10px;
+    margin-top:18px;
+    flex-wrap:wrap;
+  }
+  button.primary, button.ghost{
+    font-family:'Chakra Petch', sans-serif;
+    font-weight:700;
+    font-size:14.5px;
+    letter-spacing:0.06em;
+    border-radius:10px;
+    padding:12px 22px;
+    cursor:pointer;
+    border:1px solid transparent;
+    transition:transform .12s ease, box-shadow .15s ease, opacity .15s ease;
+  }
+  button.primary{
+    flex:1;
+    min-width:160px;
+    background:linear-gradient(135deg, var(--accent), #2a8fd6);
+    color:#03101c;
+    box-shadow:0 10px 26px -10px rgba(79,216,255,0.6);
+  }
+  button.primary:hover{ transform:translateY(-1px); box-shadow:0 14px 30px -10px rgba(79,216,255,0.75); }
+  button.primary:active{ transform:translateY(0); }
+  button.ghost{
+    background:transparent;
+    border-color:var(--panel-border);
+    color:var(--accent-strong);
+  }
+  button.ghost:hover{ background:rgba(79,216,255,0.08); }
+  button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  button[disabled]{ opacity:0.45; cursor:not-allowed; transform:none !important; }
+
+  /* ---------- Feedback ---------- */
+  .feedback{
+    margin-top:18px;
+    border-radius:12px;
+    padding:14px 16px;
+    font-size:14px;
+    line-height:1.6;
+    border:1px solid var(--panel-border-soft);
+    background:rgba(6,10,22,0.5);
+  }
+  .feedback[hidden]{ display:none; }
+  .feedback.ok{ border-color:rgba(63,224,165,0.5); background:var(--success-soft); color:#c9ffe9; }
+  .feedback.bad{ border-color:rgba(255,93,122,0.5); background:var(--danger-soft); color:#ffd7de; }
+  .feedback .headline{
+    font-family:'Chakra Petch', sans-serif;
+    font-weight:700;
+    font-size:15px;
+    margin:0 0 4px;
+  }
+
+  /* ---------- Diagnostic table ---------- */
+  .diagnostic{
+    margin-top:14px;
+    border:1px solid var(--panel-border-soft);
+    border-radius:12px;
+    overflow:hidden;
+  }
+  .diagnostic[hidden]{ display:none; }
+  .diagnostic-head{
+    background:rgba(79,216,255,0.08);
+    padding:9px 14px;
+    font-family:'Chakra Petch', sans-serif;
+    font-size:11.5px;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    color:var(--accent);
+  }
+  table.align-table{
+    width:100%;
+    border-collapse:collapse;
+    font-family:'JetBrains Mono', monospace;
+    font-size:15px;
+  }
+  table.align-table th, table.align-table td{
+    padding:9px 6px;
+    text-align:center;
+    color:var(--text);
+  }
+  table.align-table thead th{
+    color:var(--text-faint);
+    font-size:11px;
+    letter-spacing:0.1em;
+    border-bottom:1px solid var(--panel-border-soft);
+  }
+  table.align-table tbody th{
+    text-align:left;
+    padding-left:14px;
+    color:var(--text-dim);
+    font-size:12px;
+    white-space:nowrap;
+  }
+  table.align-table tr.sum-row td, table.align-table tr.sum-row th{
+    border-top:1px solid var(--panel-border-soft);
+    color:var(--accent-strong);
+    font-weight:700;
+  }
+  .cell-zero{ color:var(--zero-fill); position:relative; }
+  .cell-zero::after{
+    content:'補零';
+    display:block;
+    font-family:'Noto Sans TC', sans-serif;
+    font-size:9px;
+    letter-spacing:0.05em;
+    color:var(--zero-fill);
+    opacity:0.85;
+    margin-top:1px;
+  }
+
+  footer{
+    text-align:center;
+    color:var(--text-faint);
+    font-size:11.5px;
+    letter-spacing:0.05em;
+    margin-top:6px;
+  }
+
+  @media (max-width:420px){
+    .coef-grid{ grid-template-columns:repeat(4, 1fr); gap:6px; }
+    .coef-cell input{ font-size:16px; padding:9px 2px; }
+    .poly-card{ font-size:16px; padding:10px 12px; }
+    .stats{ gap:6px; }
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <header class="hud-header">
+    <span class="corner tl"></span><span class="corner tr"></span>
+    <span class="corner bl"></span><span class="corner br"></span>
+    <p class="eyebrow">Algebra Systems // Module 01</p>
+    <h1>多項式加法訓練艙</h1>
+    <p class="subtitle">校準你的多項式加法能力：對齊次方、缺項補零、辨識升冪與降冪排列。系統將無限生成題目。</p>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">連勝 Streak</div>
+        <div class="stat-value" id="statStreak">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">正確 Correct</div>
+        <div class="stat-value" id="statCorrect">0 / 0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">正確率 Rate</div>
+        <div class="stat-value" id="statRate">--%</div>
+      </div>
+    </div>
+  </header>
+
+  <button class="tip-toggle" id="tipToggle" type="button" aria-expanded="false" aria-controls="tipPanel">
+    <span>📘</span><span>觀念提示：缺項補零 / 升冪降冪</span>
+  </button>
+  <div class="tip-panel" id="tipPanel" hidden>
+    <strong>兩個關鍵觀念</strong>
+    <ol>
+      <li><strong>缺項補零：</strong>多項式若少了某個次方項，代表那一項的係數是 0。例如 3x³ − 5，其實是 3x³ ＋ 0x² ＋ 0x − 5，相加時要把「隱形的 0」找出來對齊。</li>
+      <li><strong>升冪 / 降冪：</strong>次方由小到大排叫「升冪」，由大到小排叫「降冪」。題目有時會刻意打亂順序，計算前建議先重新排成降冪，比較不容易對錯次方。</li>
+    </ol>
+  </div>
+
+  <section class="panel" id="problemPanel">
+    <p class="panel-title"><span class="dot"></span>輸入資料：兩個多項式相加</p>
+
+    <div class="poly-stack">
+      <div class="poly-row">
+        <div class="poly-tag">A</div>
+        <div class="poly-card" id="polyA"></div>
+      </div>
+      <div class="plus-divider"><span class="line"></span><span>PLUS</span><span class="line"></span></div>
+      <div class="poly-row">
+        <div class="poly-tag">B</div>
+        <div class="poly-card" id="polyB"></div>
+      </div>
+    </div>
+
+    <div class="answer-block">
+      <p class="answer-label">請依降冪排列，輸入 A + B 的每一項係數</p>
+      <div class="coef-grid">
+        <div class="coef-cell">
+          <label for="coef3">x³ 係數</label>
+          <input type="number" inputmode="numeric" id="coef3" placeholder="?">
+        </div>
+        <div class="coef-cell">
+          <label for="coef2">x² 係數</label>
+          <input type="number" inputmode="numeric" id="coef2" placeholder="?">
+        </div>
+        <div class="coef-cell">
+          <label for="coef1">x¹ 係數</label>
+          <input type="number" inputmode="numeric" id="coef1" placeholder="?">
+        </div>
+        <div class="coef-cell">
+          <label for="coef0">常數項</label>
+          <input type="number" inputmode="numeric" id="coef0" placeholder="?">
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="primary" id="submitBtn" type="button">執行運算 ▸</button>
+        <button class="ghost" id="nextBtn" type="button" disabled>下一題 ▸▸</button>
+      </div>
+    </div>
+
+    <div class="feedback" id="feedback" hidden>
+      <p class="headline" id="feedbackHead"></p>
+      <p id="feedbackBody" style="margin:0;"></p>
+    </div>
+
+    <div class="diagnostic" id="diagnostic" hidden>
+      <div class="diagnostic-head">計算過程解析 // Alignment Readout</div>
+      <table class="align-table" id="alignTable">
+        <thead>
+          <tr><th></th><th>x³</th><th>x²</th><th>x¹</th><th>常數</th></tr>
+        </thead>
+        <tbody id="alignBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>系統將持續生成新題目，無需重新整理頁面。</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var state = {
+    streak: 0,
+    correct: 0,
+    total: 0,
+    current: null,
+    locked: false
+  };
+
+  try{
+    var saved = JSON.parse(localStorage.getItem('polyLabStats') || 'null');
+    if (saved && typeof saved.correct === 'number') {
+      state.streak = saved.streak || 0;
+      state.correct = saved.correct || 0;
+      state.total = saved.total || 0;
+    }
+  }catch(e){ /* ignore storage errors */ }
+
+  function saveStats(){
+    try{
+      localStorage.setItem('polyLabStats', JSON.stringify({
+        streak: state.streak, correct: state.correct, total: state.total
+      }));
+    }catch(e){ /* ignore storage errors */ }
+  }
+
+  function randInt(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
+  function nonZeroCoef(){ var c; do { c = randInt(-9, 9); } while (c === 0); return c; }
+
+  function weightedTopDegree(){
+    var r = Math.random();
+    if (r < 0.15) return 1;
+    if (r < 0.45) return 2;
+    return 3;
+  }
+
+  function generatePolynomial(topDegree){
+    var terms = {};
+    terms[topDegree] = nonZeroCoef();
+    for (var d = topDegree - 1; d >= 0; d--){
+      if (Math.random() < 0.7) terms[d] = nonZeroCoef();
+    }
+    return terms;
+  }
+
+  function generateProblem(){
+    var topA, topB;
+    if (Math.random() < 0.5){
+      topA = 3; topB = weightedTopDegree();
+    } else {
+      topA = weightedTopDegree(); topB = 3;
+    }
+    var A = generatePolynomial(topA);
+    var B = generatePolynomial(topB);
+
+    var answer = [0,0,0,0]; // index by degree
+    for (var d = 0; d <= 3; d++){
+      answer[d] = (A[d] || 0) + (B[d] || 0);
+    }
+
+    return {
+      A: A, B: B, answer: answer,
+      orderA: pickOrder(A), orderB: pickOrder(B)
+    };
+  }
+
+  function pickOrder(terms){
+    var degrees = Object.keys(terms).map(Number).sort(function(a,b){ return b - a; });
+    var mode = Math.random();
+    if (mode < 0.5) return { degrees: degrees, label: null };
+    if (mode < 0.75) {
+      var asc = degrees.slice().sort(function(a,b){ return a - b; });
+      return { degrees: asc, label: '（此列為升冪排列）' };
+    }
+    var shuffled = degrees.slice();
+    for (var i = shuffled.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = shuffled[i]; shuffled[i] = shuffled[j]; shuffled[j] = tmp;
+    }
+    // 若洗牌後剛好變成降冪，強制反轉避免誤判
+    var isDescending = shuffled.every(function(v, idx){ return idx === 0 || shuffled[idx-1] > v; });
+    if (isDescending && shuffled.length > 1) shuffled.reverse();
+    return { degrees: shuffled, label: '（此列排列已被打亂）' };
+  }
+
+  function termHTML(coef, degree, isFirst){
+    var abs = Math.abs(coef);
+    var neg = coef < 0;
+    var signHTML;
+    if (isFirst){
+      signHTML = neg ? '<span class="sign neg">-</span>' : '';
+    } else {
+      signHTML = '<span class="sign ' + (neg ? 'neg' : 'pos') + '">' + (neg ? '-' : '+') + '</span>';
+    }
+    var coefStr = (abs === 1 && degree !== 0) ? '' : String(abs);
+    var varStr = degree === 0 ? '' : (degree === 1 ? 'x' : ('x<sup>' + degree + '</sup>'));
+    return signHTML + '<span class="term">' + coefStr + varStr + '</span>';
+  }
+
+  function renderPoly(elId, terms, order){
+    var html = '';
+    if (order.label) html += '<span class="order-flag">' + order.label + '</span>';
+    order.degrees.forEach(function(d, idx){
+      html += termHTML(terms[d], d, idx === 0);
+    });
+    document.getElementById(elId).innerHTML = html;
+  }
+
+  function renderProblem(){
+    var p = generateProblem();
+    state.current = p;
+    renderPoly('polyA', p.A, p.orderA);
+    renderPoly('polyB', p.B, p.orderB);
+
+    ['coef3','coef2','coef1','coef0'].forEach(function(id){
+      var el = document.getElementById(id);
+      el.value = '';
+      el.classList.remove('is-correct','is-wrong');
+      el.disabled = false;
+    });
+    document.getElementById('feedback').hidden = true;
+    document.getElementById('diagnostic').hidden = true;
+    document.getElementById('submitBtn').disabled = false;
+    document.getElementById('nextBtn').disabled = true;
+    state.locked = false;
+    document.getElementById('coef3').focus();
+  }
+
+  function updateStats(){
+    document.getElementById('statStreak').textContent = state.streak;
+    document.getElementById('statCorrect').textContent = state.correct + ' / ' + state.total;
+    var rate = state.total ? Math.round((state.correct / state.total) * 100) : null;
+    document.getElementById('statRate').textContent = rate === null ? '--%' : (rate + '%');
+  }
+
+  function buildAlignRow(labelHTML, arr, markZero){
+    var cells = ['x3','x2','x1','x0'].map(function(_, i){
+      var deg = 3 - i;
+      var v = arr[deg];
+      var zero = markZero && markZero[deg];
+      return '<td class="' + (zero ? 'cell-zero' : '') + '">' + v + '</td>';
+    }).join('');
+    return '<tr><th>' + labelHTML + '</th>' + cells + '</tr>';
+  }
+
+  function renderDiagnostic(p){
+    var Afull = {}, Bfull = {}, Azero = {}, Bzero = {};
+    for (var d = 0; d <= 3; d++){
+      Afull[d] = p.A[d] || 0; Azero[d] = !(d in p.A);
+      Bfull[d] = p.B[d] || 0; Bzero[d] = !(d in p.B);
+    }
+    var rows = '';
+    rows += buildAlignRow('多項式 A', Afull, Azero);
+    rows += buildAlignRow('多項式 B', Bfull, Bzero);
+    rows += '<tr class="sum-row"><th>總和</th>' +
+      [3,2,1,0].map(function(d){ return '<td>' + p.answer[d] + '</td>'; }).join('') +
+      '</tr>';
+    document.getElementById('alignBody').innerHTML = rows;
+    document.getElementById('diagnostic').hidden = false;
+  }
+
+  function handleSubmit(){
+    if (state.locked || !state.current) return;
+    var ids = ['coef3','coef2','coef1','coef0'];
+    var values = [];
+    var incomplete = false;
+
+    ids.forEach(function(id){
+      var raw = document.getElementById(id).value.trim();
+      if (raw === '' || isNaN(Number(raw))){ incomplete = true; values.push(null); }
+      else values.push(parseInt(raw, 10));
+    });
+
+    if (incomplete){
+      var fb = document.getElementById('feedback');
+      fb.hidden = false;
+      fb.className = 'feedback bad';
+      document.getElementById('feedbackHead').textContent = '資料不完整';
+      document.getElementById('feedbackBody').textContent = '四個係數欄位都要填寫，缺項的部分請填 0，不要留空。';
+      return;
+    }
+
+    var answer = state.current.answer; // index = degree, values[0]=x3 ... values[3]=const
+    var correctFlags = [3,2,1,0].map(function(deg, i){ return values[i] === answer[deg]; });
+    var allCorrect = correctFlags.every(Boolean);
+
+    ids.forEach(function(id, i){
+      var el = document.getElementById(id);
+      el.classList.add(correctFlags[i] ? 'is-correct' : 'is-wrong');
+      el.disabled = true;
+    });
+
+    state.total += 1;
+    if (allCorrect){
+      state.streak += 1;
+      state.correct += 1;
+    } else {
+      state.streak = 0;
+    }
+    saveStats();
+    updateStats();
+
+    var fb = document.getElementById('feedback');
+    fb.hidden = false;
+    if (allCorrect){
+      fb.className = 'feedback ok';
+      document.getElementById('feedbackHead').textContent = '校準成功 ✓';
+      document.getElementById('feedbackBody').textContent = '次方對齊正確，缺項也成功補零。系統已記錄本次連勝。';
+    } else {
+      fb.className = 'feedback bad';
+      document.getElementById('feedbackHead').textContent = '偵測到誤差 ✗';
+      document.getElementById('feedbackBody').textContent = '對照下方解析表，檢查是否漏看了某個次方的隱形 0，或次方順序看錯。';
+    }
+
+    renderDiagnostic(state.current);
+    state.locked = true;
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('nextBtn').disabled = false;
+    document.getElementById('nextBtn').focus();
+  }
+
+  document.getElementById('submitBtn').addEventListener('click', handleSubmit);
+  document.getElementById('nextBtn').addEventListener('click', renderProblem);
+  document.getElementById('tipToggle').addEventListener('click', function(){
+    var panel = document.getElementById('tipPanel');
+    var expanded = !panel.hidden;
+    panel.hidden = expanded;
+    this.setAttribute('aria-expanded', String(!expanded));
+  });
+
+  ['coef3','coef2','coef1','coef0'].forEach(function(id){
+    document.getElementById(id).addEventListener('keydown', function(e){
+      if (e.key === 'Enter') handleSubmit();
+    });
+  });
+
+  updateStats();
+  renderProblem();
+})();
+</script>
+</body>
+</html>
