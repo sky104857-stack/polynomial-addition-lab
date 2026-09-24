@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>多項式加法訓練艙</title>
-<meta name="description" content="國二多項式加法互動練習：無限出題、缺項補零、升冪降冪打散，未來科技風介面。">
+<title>多項式加減法訓練艙</title>
+<meta name="description" content="國二多項式加減法互動練習：無限出題、缺項補零、升冪降冪打散，未來科技風介面。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -273,18 +273,47 @@
   .sign.neg{ color:var(--danger); }
   .sign.pos{ color:var(--accent); }
 
-  .plus-divider{
+  .op-divider{
+    position:relative;
     display:flex;
     align-items:center;
     justify-content:center;
-    gap:10px;
-    color:var(--text-faint);
-    font-family:'Chakra Petch', sans-serif;
-    font-size:12px;
-    letter-spacing:0.2em;
-    margin:2px 0;
+    height:56px;
+    margin:-6px 0;
   }
-  .plus-divider .line{ flex:1; height:1px; background:var(--panel-border-soft); }
+  .op-divider::before{
+    content:'';
+    position:absolute;
+    top:0; bottom:0; left:50%;
+    width:2px;
+    background:linear-gradient(180deg, transparent, var(--panel-border), transparent);
+    transform:translateX(-50%);
+    z-index:0;
+  }
+  .op-badge{
+    position:relative;
+    z-index:1;
+    width:52px;
+    height:52px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Chakra Petch', sans-serif;
+    font-weight:700;
+    font-size:26px;
+    line-height:1;
+    border:2px solid var(--accent);
+    color:var(--accent-strong);
+    background:radial-gradient(circle at 32% 28%, rgba(79,216,255,0.28), rgba(6,10,22,0.92));
+    box-shadow:0 0 20px rgba(79,216,255,0.55), inset 0 0 14px rgba(79,216,255,0.25);
+  }
+  .op-badge.minus{
+    border-color:var(--danger);
+    color:#ffd7de;
+    background:radial-gradient(circle at 32% 28%, rgba(255,93,122,0.26), rgba(6,10,22,0.92));
+    box-shadow:0 0 20px rgba(255,93,122,0.55), inset 0 0 14px rgba(255,93,122,0.25);
+  }
 
   /* ---------- Answer inputs ---------- */
   .answer-block{
@@ -437,6 +466,11 @@
     color:var(--accent-strong);
     font-weight:700;
   }
+  table.align-table tr.neg-row td, table.align-table tr.neg-row th{
+    color:var(--accent-2);
+    font-style:italic;
+    border-top:1px dashed var(--panel-border-soft);
+  }
   .cell-zero{ color:var(--zero-fill); position:relative; }
   .cell-zero::after{
     content:'補零';
@@ -448,6 +482,96 @@
     opacity:0.85;
     margin-top:1px;
   }
+
+  .coef-hint{
+    min-height:14px;
+    text-align:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:var(--danger);
+    letter-spacing:0.02em;
+  }
+
+  /* ---------- Diagnostic modal ---------- */
+  .modal-backdrop{
+    position:fixed;
+    inset:0;
+    background:rgba(3,6,14,0.72);
+    backdrop-filter:blur(3px);
+    -webkit-backdrop-filter:blur(3px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:50;
+  }
+  .modal-backdrop[hidden]{ display:none; }
+  .modal-box{
+    position:relative;
+    width:100%;
+    max-width:480px;
+    max-height:85vh;
+    overflow-y:auto;
+    overflow-x:hidden;
+    border:1px solid rgba(255,93,122,0.4);
+    background:linear-gradient(160deg, var(--panel), var(--panel-2));
+    border-radius:16px;
+    padding:26px 22px 22px;
+    box-shadow:0 30px 70px -20px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,93,122,0.12);
+  }
+  .modal-box .table-scroll{
+    overflow-x:auto;
+    margin:0 -4px;
+    padding:0 4px;
+  }
+  .modal-box .align-table{ table-layout:fixed; width:100%; }
+  .modal-box .align-table th, .modal-box .align-table td{ padding:8px 3px; font-size:13.5px; }
+  .modal-box .align-table tbody th{
+    white-space:normal;
+    line-height:1.3;
+    font-size:10.5px;
+    width:34%;
+  }
+  .modal-box .cell-zero::after{ font-size:8px; }
+  .modal-close{
+    position:absolute;
+    top:12px; right:12px;
+    width:30px; height:30px;
+    border-radius:50%;
+    border:1px solid var(--panel-border-soft);
+    background:transparent;
+    color:var(--text-dim);
+    font-size:18px;
+    line-height:1;
+    cursor:pointer;
+  }
+  .modal-close:hover{ color:var(--text); border-color:var(--accent); }
+  .modal-close:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .modal-eyebrow{
+    font-family:'Chakra Petch', sans-serif;
+    font-size:11px;
+    letter-spacing:0.26em;
+    text-transform:uppercase;
+    color:var(--danger);
+    margin:0 0 6px;
+  }
+  .modal-box h2{
+    margin:0 0 16px;
+    padding-right:26px;
+    font-family:'Chakra Petch', 'Noto Sans TC', sans-serif;
+    font-weight:700;
+    font-size:19px;
+    color:var(--text);
+    text-wrap:balance;
+  }
+  .modal-note{
+    margin:14px 0 20px;
+    font-size:13px;
+    line-height:1.7;
+    color:var(--text-dim);
+  }
+  .modal-note strong{ color:var(--accent-2); }
+  .modal-box button.primary{ width:100%; }
 
   footer{
     text-align:center;
@@ -472,8 +596,8 @@
     <span class="corner tl"></span><span class="corner tr"></span>
     <span class="corner bl"></span><span class="corner br"></span>
     <p class="eyebrow">Algebra Systems // Module 01</p>
-    <h1>多項式加法訓練艙</h1>
-    <p class="subtitle">校準你的多項式加法能力：對齊次方、缺項補零、辨識升冪與降冪排列。系統將無限生成題目。</p>
+    <h1>多項式加減法訓練艙</h1>
+    <p class="subtitle">校準你的多項式加減法能力：對齊次方、缺項補零、辨識升冪與降冪排列。系統將無限生成題目，加號減號隨機出現。</p>
 
     <div class="stats">
       <div class="stat">
@@ -492,25 +616,26 @@
   </header>
 
   <button class="tip-toggle" id="tipToggle" type="button" aria-expanded="false" aria-controls="tipPanel">
-    <span>📘</span><span>觀念提示：缺項補零 / 升冪降冪</span>
+    <span>📘</span><span>觀念提示：缺項補零 / 升冪降冪 / 減法變號</span>
   </button>
   <div class="tip-panel" id="tipPanel" hidden>
-    <strong>兩個關鍵觀念</strong>
+    <strong>三個關鍵觀念</strong>
     <ol>
-      <li><strong>缺項補零：</strong>多項式若少了某個次方項，代表那一項的係數是 0。例如 3x³ − 5，其實是 3x³ ＋ 0x² ＋ 0x − 5，相加時要把「隱形的 0」找出來對齊。</li>
+      <li><strong>缺項補零：</strong>多項式若少了某個次方項，代表那一項的係數是 0。例如 3x³ − 5，其實是 3x³ ＋ 0x² ＋ 0x − 5，相加減時要把「隱形的 0」找出來對齊。</li>
       <li><strong>升冪 / 降冪：</strong>次方由小到大排叫「升冪」，由大到小排叫「降冪」。題目有時會刻意打亂順序，計算前建議先重新排成降冪，比較不容易對錯次方。</li>
+      <li><strong>減法要變號：</strong>A − B 不能直接把 B 的係數搬過來，要先把 B 每一項的正負號都反過來（等於 A ＋（−B）），再逐項相加，這是減法題最容易出錯的地方。</li>
     </ol>
   </div>
 
   <section class="panel" id="problemPanel">
-    <p class="panel-title"><span class="dot"></span>輸入資料：兩個多項式相加</p>
+    <p class="panel-title"><span class="dot"></span><span id="panelTitleText">輸入資料：兩個多項式運算</span></p>
 
     <div class="poly-stack">
       <div class="poly-row">
         <div class="poly-tag">A</div>
         <div class="poly-card" id="polyA"></div>
       </div>
-      <div class="plus-divider"><span class="line"></span><span>PLUS</span><span class="line"></span></div>
+      <div class="op-divider"><div class="op-badge" id="opBadge">+</div></div>
       <div class="poly-row">
         <div class="poly-tag">B</div>
         <div class="poly-card" id="polyB"></div>
@@ -518,23 +643,27 @@
     </div>
 
     <div class="answer-block">
-      <p class="answer-label">請依降冪排列，輸入 A + B 的每一項係數</p>
+      <p class="answer-label" id="answerLabel">請依降冪排列，輸入 A + B 的每一項係數</p>
       <div class="coef-grid">
         <div class="coef-cell">
           <label for="coef3">x³ 係數</label>
           <input type="number" inputmode="numeric" id="coef3" placeholder="?">
+          <div class="coef-hint" id="hint3"></div>
         </div>
         <div class="coef-cell">
           <label for="coef2">x² 係數</label>
           <input type="number" inputmode="numeric" id="coef2" placeholder="?">
+          <div class="coef-hint" id="hint2"></div>
         </div>
         <div class="coef-cell">
           <label for="coef1">x¹ 係數</label>
           <input type="number" inputmode="numeric" id="coef1" placeholder="?">
+          <div class="coef-hint" id="hint1"></div>
         </div>
         <div class="coef-cell">
           <label for="coef0">常數項</label>
           <input type="number" inputmode="numeric" id="coef0" placeholder="?">
+          <div class="coef-hint" id="hint0"></div>
         </div>
       </div>
 
@@ -548,19 +677,27 @@
       <p class="headline" id="feedbackHead"></p>
       <p id="feedbackBody" style="margin:0;"></p>
     </div>
-
-    <div class="diagnostic" id="diagnostic" hidden>
-      <div class="diagnostic-head">計算過程解析 // Alignment Readout</div>
-      <table class="align-table" id="alignTable">
-        <thead>
-          <tr><th></th><th>x³</th><th>x²</th><th>x¹</th><th>常數</th></tr>
-        </thead>
-        <tbody id="alignBody"></tbody>
-      </table>
-    </div>
   </section>
 
   <footer>系統將持續生成新題目，無需重新整理頁面。</footer>
+</div>
+
+<div class="modal-backdrop" id="modalBackdrop" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <button class="modal-close" id="modalClose" type="button" aria-label="關閉視窗">×</button>
+    <p class="modal-eyebrow">診斷報告 // Correct Alignment</p>
+    <h2 id="modalTitle">偵測到誤差 — 正確直式步驟</h2>
+    <div class="table-scroll">
+      <table class="align-table" id="modalAlignTable">
+        <thead>
+          <tr><th></th><th>x³</th><th>x²</th><th>x¹</th><th>常數</th></tr>
+        </thead>
+        <tbody id="modalAlignBody"></tbody>
+      </table>
+    </div>
+    <p class="modal-note" id="modalNote"></p>
+    <button class="primary" id="modalNextBtn" type="button">我了解了，換下一題 ▸▸</button>
+  </div>
 </div>
 
 <script>
@@ -620,14 +757,16 @@
     }
     var A = generatePolynomial(topA);
     var B = generatePolynomial(topB);
+    var op = Math.random() < 0.5 ? '+' : '-';
 
     var answer = [0,0,0,0]; // index by degree
     for (var d = 0; d <= 3; d++){
-      answer[d] = (A[d] || 0) + (B[d] || 0);
+      var a = A[d] || 0, b = B[d] || 0;
+      answer[d] = op === '+' ? (a + b) : (a - b);
     }
 
     return {
-      A: A, B: B, answer: answer,
+      A: A, B: B, op: op, answer: answer,
       orderA: pickOrder(A), orderB: pickOrder(B)
     };
   }
@@ -680,14 +819,23 @@
     renderPoly('polyA', p.A, p.orderA);
     renderPoly('polyB', p.B, p.orderB);
 
-    ['coef3','coef2','coef1','coef0'].forEach(function(id){
+    var opBadge = document.getElementById('opBadge');
+    opBadge.textContent = p.op === '+' ? '+' : '−';
+    opBadge.classList.toggle('minus', p.op === '-');
+
+    var opSymbol = p.op === '+' ? '＋' : '－';
+    document.getElementById('panelTitleText').textContent = '輸入資料：兩個多項式' + (p.op === '+' ? '相加' : '相減');
+    document.getElementById('answerLabel').textContent = '請依降冪排列，輸入 A ' + opSymbol + ' B 的每一項係數';
+
+    ['coef3','coef2','coef1','coef0'].forEach(function(id, i){
       var el = document.getElementById(id);
       el.value = '';
       el.classList.remove('is-correct','is-wrong');
       el.disabled = false;
+      document.getElementById(['hint3','hint2','hint1','hint0'][i]).textContent = '';
     });
     document.getElementById('feedback').hidden = true;
-    document.getElementById('diagnostic').hidden = true;
+    closeModal();
     document.getElementById('submitBtn').disabled = false;
     document.getElementById('nextBtn').disabled = true;
     state.locked = false;
@@ -701,17 +849,17 @@
     document.getElementById('statRate').textContent = rate === null ? '--%' : (rate + '%');
   }
 
-  function buildAlignRow(labelHTML, arr, markZero){
+  function buildAlignRow(labelHTML, arr, markZero, rowClass){
     var cells = ['x3','x2','x1','x0'].map(function(_, i){
       var deg = 3 - i;
       var v = arr[deg];
       var zero = markZero && markZero[deg];
       return '<td class="' + (zero ? 'cell-zero' : '') + '">' + v + '</td>';
     }).join('');
-    return '<tr><th>' + labelHTML + '</th>' + cells + '</tr>';
+    return '<tr class="' + (rowClass || '') + '"><th>' + labelHTML + '</th>' + cells + '</tr>';
   }
 
-  function renderDiagnostic(p){
+  function diagnosticRowsHTML(p){
     var Afull = {}, Bfull = {}, Azero = {}, Bzero = {};
     for (var d = 0; d <= 3; d++){
       Afull[d] = p.A[d] || 0; Azero[d] = !(d in p.A);
@@ -719,17 +867,40 @@
     }
     var rows = '';
     rows += buildAlignRow('多項式 A', Afull, Azero);
-    rows += buildAlignRow('多項式 B', Bfull, Bzero);
-    rows += '<tr class="sum-row"><th>總和</th>' +
+    rows += buildAlignRow(p.op === '+' ? '多項式 B' : '多項式 B（原式）', Bfull, Bzero);
+
+    if (p.op === '-'){
+      var negB = {};
+      for (var d2 = 0; d2 <= 3; d2++) negB[d2] = -Bfull[d2];
+      rows += buildAlignRow('－B（每項變號後）', negB, Bzero, 'neg-row');
+    }
+
+    var sumLabel = p.op === '+' ? '總和 (A＋B)' : '結果 (A－B)';
+    rows += '<tr class="sum-row"><th>' + sumLabel + '</th>' +
       [3,2,1,0].map(function(d){ return '<td>' + p.answer[d] + '</td>'; }).join('') +
       '</tr>';
-    document.getElementById('alignBody').innerHTML = rows;
-    document.getElementById('diagnostic').hidden = false;
+    return rows;
+  }
+
+  function openModal(p){
+    document.getElementById('modalAlignBody').innerHTML = diagnosticRowsHTML(p);
+    document.getElementById('modalNote').innerHTML = p.op === '-'
+      ? '重點：算 A－B 時不能直接抄 B 的係數，要先把 B 每一項的正負號反過來（上表已示範），再對齊次方相加，缺項一樣要補 0。'
+      : '重點：把兩式同次方的係數對齊，缺項記得補 0，再逐項相加。';
+    var backdrop = document.getElementById('modalBackdrop');
+    backdrop.hidden = false;
+    document.getElementById('modalNextBtn').focus();
+  }
+
+  function closeModal(){
+    document.getElementById('modalBackdrop').hidden = true;
   }
 
   function handleSubmit(){
     if (state.locked || !state.current) return;
     var ids = ['coef3','coef2','coef1','coef0'];
+    var hintIds = ['hint3','hint2','hint1','hint0'];
+    var degrees = [3,2,1,0];
     var values = [];
     var incomplete = false;
 
@@ -740,22 +911,29 @@
     });
 
     if (incomplete){
-      var fb = document.getElementById('feedback');
-      fb.hidden = false;
-      fb.className = 'feedback bad';
+      var fbEarly = document.getElementById('feedback');
+      fbEarly.hidden = false;
+      fbEarly.className = 'feedback bad';
       document.getElementById('feedbackHead').textContent = '資料不完整';
       document.getElementById('feedbackBody').textContent = '四個係數欄位都要填寫，缺項的部分請填 0，不要留空。';
       return;
     }
 
-    var answer = state.current.answer; // index = degree, values[0]=x3 ... values[3]=const
-    var correctFlags = [3,2,1,0].map(function(deg, i){ return values[i] === answer[deg]; });
+    // 立刻鎖定，避免同一次點擊/觸控在畫面更新前重複觸發
+    state.locked = true;
+    document.getElementById('submitBtn').disabled = true;
+
+    var p = state.current;
+    var answer = p.answer; // index = degree
+    var correctFlags = degrees.map(function(deg, i){ return values[i] === answer[deg]; });
     var allCorrect = correctFlags.every(Boolean);
 
     ids.forEach(function(id, i){
       var el = document.getElementById(id);
       el.classList.add(correctFlags[i] ? 'is-correct' : 'is-wrong');
       el.disabled = true;
+      var hintEl = document.getElementById(hintIds[i]);
+      hintEl.textContent = correctFlags[i] ? '' : ('正確：' + answer[degrees[i]]);
     });
 
     state.total += 1;
@@ -777,14 +955,14 @@
     } else {
       fb.className = 'feedback bad';
       document.getElementById('feedbackHead').textContent = '偵測到誤差 ✗';
-      document.getElementById('feedbackBody').textContent = '對照下方解析表，檢查是否漏看了某個次方的隱形 0，或次方順序看錯。';
+      document.getElementById('feedbackBody').textContent = '錯誤欄位旁已標出正確答案，完整直式步驟請見彈出視窗。';
+      openModal(p);
     }
 
-    renderDiagnostic(state.current);
-    state.locked = true;
-    document.getElementById('submitBtn').disabled = true;
-    document.getElementById('nextBtn').disabled = false;
-    document.getElementById('nextBtn').focus();
+    // 下一題按鈕強制冷卻一小段時間才會亮起，避免連續點擊/觸控在還沒看清結果前就跳題
+    var nextBtn = document.getElementById('nextBtn');
+    nextBtn.disabled = true;
+    setTimeout(function(){ nextBtn.disabled = false; }, allCorrect ? 500 : 700);
   }
 
   document.getElementById('submitBtn').addEventListener('click', handleSubmit);
@@ -794,6 +972,18 @@
     var expanded = !panel.hidden;
     panel.hidden = expanded;
     this.setAttribute('aria-expanded', String(!expanded));
+  });
+
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+  document.getElementById('modalNextBtn').addEventListener('click', function(){
+    closeModal();
+    renderProblem();
+  });
+  document.getElementById('modalBackdrop').addEventListener('click', function(e){
+    if (e.target === this) closeModal();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && !document.getElementById('modalBackdrop').hidden) closeModal();
   });
 
   ['coef3','coef2','coef1','coef0'].forEach(function(id){
