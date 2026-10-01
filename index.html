@@ -759,6 +759,12 @@
   .ld-result{ color:var(--text); font-weight:700; }
   .ld-grid .ld-zero .term,
   .ld-grid .ld-zero .sign{ color:var(--zero-fill); }
+  .ld-mul-label{
+    color:var(--accent-2);
+    font-weight:700;
+    align-self:end;
+    padding-right:6px;
+  }
 
   @media (max-width:560px){
     .modal-box{ padding:28px 18px 24px; }
@@ -1066,6 +1072,22 @@
     return html === '' ? '<span class="term">0</span>' : html;
   }
 
+  // 每一項各自放進自己次方對應的欄位，不要整列當成一串文字——
+  // 不然係數位數一多（例如 12x 比 6x 寬），後面的項目就會跟上一列的同次方項錯開。
+  // 每個次方欄位都要畫出來，就算係數是 0 也要明確顯示「0x」，
+  // 呼應整個網頁強調的「缺項補零」概念，而不是悄悄跳過那一欄。
+  function emitTerms(gridRow, fracArr, topDeg, bottomDeg, mapDegToCol, extraClass){
+    var html = '';
+    for (var d = topDeg; d >= bottomDeg; d--){
+      var val = fracArr[d] || FZERO;
+      var isFirst = (d === topDeg);
+      var cls = (extraClass || '') + (val.isZero() ? ' ld-zero' : '');
+      html += '<div class="ld-cell ' + cls + '" style="grid-row:' + gridRow + '; grid-column:' + mapDegToCol(d) + ';">' +
+        fracTermHTML(val, d, isFirst) + '</div>';
+    }
+    return html;
+  }
+
   // 畫出課本常見的長除法直式：商寫在上面，依序消去領先項、把差額跟下一項合併
   function longDivisionTableauHTML(p){
     var meta = p.divMeta;
@@ -1078,22 +1100,6 @@
     var dr = polyDivideFractionSteps(dividendFrac, divisorFrac);
 
     function colStart(deg){ return (dividendDeg - deg) + 2; } // +1 進位、+1 讓出左側除式欄
-
-    // 每一項各自放進自己次方對應的欄位，不要整列當成一串文字——
-    // 不然係數位數一多（例如 12x 比 6x 寬），後面的項目就會跟上一列的同次方項錯開。
-    // 每個次方欄位都要畫出來，就算係數是 0 也要明確顯示「0x」，
-    // 呼應整個網頁強調的「缺項補零」概念，而不是悄悄跳過那一欄。
-    function emitTerms(gridRow, fracArr, topDeg, bottomDeg, mapDegToCol, extraClass){
-      var html = '';
-      for (var d = topDeg; d >= bottomDeg; d--){
-        var val = fracArr[d] || FZERO;
-        var isFirst = (d === topDeg);
-        var cls = (extraClass || '') + (val.isZero() ? ' ld-zero' : '');
-        html += '<div class="ld-cell ' + cls + '" style="grid-row:' + gridRow + '; grid-column:' + mapDegToCol(d) + ';">' +
-          fracTermHTML(val, d, isFirst) + '</div>';
-      }
-      return html;
-    }
 
     var rows = '';
 
@@ -1477,59 +1483,68 @@
     return rows;
   }
 
-  function formatTermPlain(coef, degree){
-    var abs = Math.abs(coef);
-    var sign = coef < 0 ? '－' : '';
-    var coefStr = (abs === 1 && degree !== 0) ? '' : String(abs);
-    var varStr = degree === 0 ? '' : 'x';
-    return sign + coefStr + varStr;
-  }
-
-  function mulRowsHTML(p){
+  // 畫出課本常見的直式乘法：被乘數在上，乘數在下用「×)」引出，
+  // 由低次到高次逐項分配（跟直式乘法的計算順序一致），每項都對齊自己的次方欄位
+  function longMultiplicationTableauHTML(p){
     var meta = p.mulMeta;
-    var Pterms = meta.PIsA ? p.A : p.B;
-    var Qterms = meta.PIsA ? p.B : p.A;
-    var Qlabel = meta.PIsA ? 'B' : 'A';
-    var Qarr = termsToArray(Qterms);
+    var Qterms = meta.PIsA ? p.B : p.A; // 被乘數（次數較高的那個，或兩者皆一次時任一個）
+    var Pterms = meta.PIsA ? p.A : p.B; // 乘數（次數較低者，逐項拿來分配）
+
+    var QdegKeys = Object.keys(Qterms).map(Number);
+    var PdegKeys = Object.keys(Pterms).map(Number);
+    var Qdeg = QdegKeys.length ? Math.max.apply(null, QdegKeys) : 0;
+    var Pdeg = PdegKeys.length ? Math.max.apply(null, PdegKeys) : 0;
+    var resultDeg = Qdeg + Pdeg;
+    var N = resultDeg + 1;
+
+    var Qfrac = toFractionArray(termsToArray(Qterms), Qdeg + 1);
+    var Pfrac = toFractionArray(termsToArray(Pterms), Pdeg + 1);
+
+    function colStart(deg){ return (resultDeg - deg) + 2; }
 
     var rows = '';
-    rows += buildAlignRow('多項式 ' + Qlabel + '（被乘數）', Qarr, null);
+    rows += emitTerms(1, Qfrac, Qdeg, 0, colStart, '');
+    rows += '<div class="ld-cell ld-mul-label" style="grid-row:2; grid-column:1;">×)</div>';
+    rows += emitTerms(2, Pfrac, Pdeg, 0, colStart, '');
+    rows += '<div class="ld-line" style="grid-row:3; grid-column:2 / -1;"></div>';
 
-    var Pdegrees = Object.keys(Pterms).map(Number).sort(function(a, b){ return b - a; });
-    var partialSum = [0,0,0,0];
-    Pdegrees.forEach(function(pd){
-      var coef = Pterms[pd];
-      var rowArr = [0,0,0,0];
-      for (var qd = 0; qd <= 3; qd++){
-        if (qd + pd <= 3) rowArr[qd + pd] += Qarr[qd] * coef;
-      }
-      for (var k = 0; k <= 3; k++) partialSum[k] += rowArr[k];
-      var label = '×（' + formatTermPlain(coef, pd) + '）';
-      rows += buildAlignRow(label, rowArr, null, 'step-row');
-    });
+    var gridRow = 4;
+    var sum = [];
+    for (var s = 0; s <= resultDeg; s++) sum[s] = FZERO;
 
-    var sumLabel = Pdegrees.length > 1 ? '總和（A×B）' : '結果（A×B）';
-    rows += '<tr class="sum-row"><th>' + sumLabel + '</th>' +
-      [3,2,1,0].map(function(d){ return '<td>' + partialSum[d] + '</td>'; }).join('') +
-      '</tr>';
-    return rows;
+    for (var pd = 0; pd <= Pdeg; pd++){
+      var coef = Pfrac[pd];
+      var rowArr = [];
+      for (var qd = 0; qd <= Qdeg; qd++) rowArr[qd + pd] = Qfrac[qd].mul(coef);
+      for (var k = pd; k <= Qdeg + pd; k++) sum[k] = sum[k].add(rowArr[k] || FZERO);
+      rows += emitTerms(gridRow, rowArr, Qdeg + pd, pd, colStart, 'ld-product');
+      gridRow++;
+    }
+
+    rows += '<div class="ld-line" style="grid-row:' + gridRow + '; grid-column:2 / -1;"></div>';
+    gridRow++;
+    rows += emitTerms(gridRow, sum, resultDeg, 0, colStart, 'ld-result');
+
+    return '<div class="ld-grid" style="grid-template-columns: auto repeat(' + N + ', minmax(40px, 1fr));">' + rows + '</div>';
   }
 
   function openModal(p){
-    var isDiv = p.op === '÷';
-    document.getElementById('modalTableWrap').hidden = isDiv;
-    document.getElementById('modalDivTableauWrap').hidden = !isDiv;
+    var isTableau = p.op === '÷' || p.op === '×';
+    document.getElementById('modalTableWrap').hidden = isTableau;
+    document.getElementById('modalDivTableauWrap').hidden = !isTableau;
 
-    if (isDiv){
+    if (p.op === '÷'){
       document.getElementById('modalDivTableauWrap').innerHTML = longDivisionTableauHTML(p);
+    } else if (p.op === '×'){
+      document.getElementById('modalDivTableauWrap').innerHTML = longMultiplicationTableauHTML(p);
     } else {
-      document.getElementById('modalAlignBody').innerHTML = p.op === '×' ? mulRowsHTML(p) : diagnosticRowsHTML(p);
+      document.getElementById('modalAlignBody').innerHTML = diagnosticRowsHTML(p);
     }
 
     var note;
     if (p.op === '×'){
-      note = '重點：把次數較低的那個多項式，每一項分別乘過去被乘數的全部項（次方相加＝新次方），每一列乘完再對齊次方加總，別漏乘任何一項。';
-    } else if (isDiv){
+      note = '重點：把乘數的每一項，由低次到高次依序乘過去被乘數的全部項（次方相加＝新次方），每一列乘完對齊次方，最後加總，別漏乘任何一項。';
+    } else if (p.op === '÷'){
       note = '重點：每一輪用除式乘以商的新一項，湊出跟領先項一樣的次方消去它，差額跟下一項合併，繼續往下除，直到次方比除式低為止。';
     } else if (p.op === '-'){
       note = '重點：算 A－B 時不能直接抄 B 的係數，要先把 B 每一項的正負號反過來（上表已示範），再對齊次方相加，缺項一樣要補 0。';
