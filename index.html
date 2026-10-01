@@ -161,6 +161,28 @@
     margin-top:2px;
   }
 
+  .reset-btn{
+    display:block;
+    margin:12px 0 0 auto;
+    background:transparent;
+    border:1px solid var(--panel-border-soft);
+    color:var(--text-faint);
+    font-family:'Chakra Petch', sans-serif;
+    font-size:11.5px;
+    letter-spacing:0.04em;
+    padding:6px 12px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:border-color .15s ease, color .15s ease, background .15s ease;
+  }
+  .reset-btn:hover{ color:var(--text-dim); border-color:var(--panel-border); }
+  .reset-btn:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .reset-btn.confirming{
+    color:#ffd7de;
+    border-color:rgba(255,93,122,0.6);
+    background:rgba(255,93,122,0.12);
+  }
+
   /* ---------- Mode nav ---------- */
   .mode-nav{
     display:flex;
@@ -813,6 +835,7 @@
         <div class="stat-value" id="statRate">--%</div>
       </div>
     </div>
+    <button class="reset-btn" id="resetStatsBtn" type="button">↺ 重置紀錄</button>
   </header>
 
   <nav class="mode-nav" role="tablist" aria-label="練習模式切換">
@@ -1449,6 +1472,29 @@
     var rate = state.total ? Math.round((state.correct / state.total) * 100) : null;
     document.getElementById('statRate').textContent = rate === null ? '--%' : (rate + '%');
   }
+
+  // 重置紀錄：第一次點擊只是要求確認，4 秒內再點一次才真的清除，避免手滑誤觸
+  var resetConfirmTimer = null;
+  var resetBtn = document.getElementById('resetStatsBtn');
+  resetBtn.addEventListener('click', function(){
+    if (!resetBtn.classList.contains('confirming')){
+      resetBtn.classList.add('confirming');
+      resetBtn.textContent = '再按一次清除？';
+      resetConfirmTimer = setTimeout(function(){
+        resetBtn.classList.remove('confirming');
+        resetBtn.textContent = '↺ 重置紀錄';
+      }, 4000);
+      return;
+    }
+    clearTimeout(resetConfirmTimer);
+    resetBtn.classList.remove('confirming');
+    resetBtn.textContent = '↺ 重置紀錄';
+    state.streak = 0;
+    state.correct = 0;
+    state.total = 0;
+    saveStats();
+    updateStats();
+  });
 
   function buildAlignRow(labelHTML, arr, markZero, rowClass){
     var cells = ['x3','x2','x1','x0'].map(function(_, i){
