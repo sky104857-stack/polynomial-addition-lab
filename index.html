@@ -662,21 +662,21 @@
     display:flex;
     align-items:center;
     justify-content:center;
-    padding:20px;
+    padding:12px;
     z-index:50;
   }
   .modal-backdrop[hidden]{ display:none; }
   .modal-box{
     position:relative;
     width:100%;
-    max-width:480px;
-    max-height:85vh;
+    max-width:min(920px, 96vw);
+    max-height:94vh;
     overflow-y:auto;
     overflow-x:hidden;
     border:1px solid rgba(255,93,122,0.4);
     background:linear-gradient(160deg, var(--panel), var(--panel-2));
-    border-radius:16px;
-    padding:26px 22px 22px;
+    border-radius:18px;
+    padding:36px 32px 32px;
     box-shadow:0 30px 70px -20px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,93,122,0.12);
   }
   .modal-box .table-scroll{
@@ -685,23 +685,23 @@
     padding:0 4px;
   }
   .modal-box .align-table{ table-layout:fixed; width:100%; }
-  .modal-box .align-table th, .modal-box .align-table td{ padding:8px 3px; font-size:13.5px; }
+  .modal-box .align-table th, .modal-box .align-table td{ padding:14px 6px; font-size:19px; }
   .modal-box .align-table tbody th{
     white-space:normal;
     line-height:1.3;
-    font-size:10.5px;
+    font-size:15px;
     width:34%;
   }
-  .modal-box .cell-zero::after{ font-size:8px; }
+  .modal-box .cell-zero::after{ font-size:11px; }
   .modal-close{
     position:absolute;
-    top:12px; right:12px;
-    width:30px; height:30px;
+    top:16px; right:16px;
+    width:40px; height:40px;
     border-radius:50%;
     border:1px solid var(--panel-border-soft);
     background:transparent;
     color:var(--text-dim);
-    font-size:18px;
+    font-size:22px;
     line-height:1;
     cursor:pointer;
   }
@@ -709,29 +709,59 @@
   .modal-close:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
   .modal-eyebrow{
     font-family:'Chakra Petch', sans-serif;
-    font-size:11px;
+    font-size:13px;
     letter-spacing:0.26em;
     text-transform:uppercase;
     color:var(--danger);
-    margin:0 0 6px;
+    margin:0 0 8px;
   }
   .modal-box h2{
-    margin:0 0 16px;
-    padding-right:26px;
+    margin:0 0 22px;
+    padding-right:34px;
     font-family:'Chakra Petch', 'Noto Sans TC', sans-serif;
     font-weight:700;
-    font-size:19px;
+    font-size:28px;
     color:var(--text);
     text-wrap:balance;
   }
   .modal-note{
-    margin:14px 0 20px;
-    font-size:13px;
-    line-height:1.7;
+    margin:20px 0 26px;
+    font-size:17px;
+    line-height:1.75;
     color:var(--text-dim);
   }
   .modal-note strong{ color:var(--accent-2); }
-  .modal-box button.primary{ width:100%; }
+  .modal-box button.primary{ width:100%; font-size:18px; padding:16px 22px; }
+
+  /* ---------- 長除法直式 ---------- */
+  .ld-grid{
+    display:grid;
+    row-gap:12px;
+    column-gap:14px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:26px;
+    color:var(--text);
+    padding:8px 4px 18px;
+    min-width:340px;
+  }
+  .ld-cell{ white-space:nowrap; }
+  .ld-quotient{ color:var(--accent-3); font-weight:700; padding-bottom:4px; }
+  .ld-divisor{
+    text-align:right;
+    padding-right:16px;
+    border-right:3px solid var(--text);
+  }
+  .ld-dividend{ border-top:3px solid var(--text); padding-top:6px; }
+  .ld-product{ color:var(--text-dim); }
+  .ld-line{ border-top:3px solid var(--accent-3); height:0; align-self:start; }
+  .ld-result{ color:var(--text); font-weight:700; }
+
+  @media (max-width:560px){
+    .modal-box{ padding:28px 18px 24px; }
+    .modal-box h2{ font-size:21px; }
+    .ld-grid{ font-size:19px; column-gap:8px; row-gap:9px; min-width:280px; }
+    .modal-note{ font-size:14.5px; }
+  }
 
   footer{
     text-align:center;
@@ -876,7 +906,7 @@
     <button class="modal-close" id="modalClose" type="button" aria-label="關閉視窗">×</button>
     <p class="modal-eyebrow">診斷報告 // Correct Alignment</p>
     <h2 id="modalTitle">偵測到誤差 — 正確直式步驟</h2>
-    <div class="table-scroll">
+    <div class="table-scroll" id="modalTableWrap">
       <table class="align-table" id="modalAlignTable">
         <thead>
           <tr><th></th><th>x³</th><th>x²</th><th>x¹</th><th>常數</th></tr>
@@ -884,6 +914,7 @@
         <tbody id="modalAlignBody"></tbody>
       </table>
     </div>
+    <div class="table-scroll" id="modalDivTableauWrap" hidden></div>
     <p class="modal-note" id="modalNote"></p>
     <button class="primary" id="modalNextBtn" type="button">我了解了，換下一題 ▸▸</button>
   </div>
@@ -969,24 +1000,99 @@
     for (var i = arr.length - 1; i >= 0; i--){ if (arr[i] && !arr[i].isZero()) return i; }
     return -1;
   }
-  function polyDivideFraction(dividend, divisor){
+  // 同時記錄每一步（領先次方、商的該項、該步的部分乘積、消去領先項後的餘式），供直式除法步驟畫面使用
+  function polyDivideFractionSteps(dividend, divisor){
     var dd = fracDegreeOf(divisor);
     var remainder = dividend.slice();
     var quotient = [];
+    var steps = [];
     while (true){
       var dr = fracDegreeOf(remainder);
       if (dr < dd) break;
       var coef = remainder[dr].div(divisor[dd]);
       var shift = dr - dd;
       quotient[shift] = coef;
+
+      var productRow = [];
+      for (var z = 0; z <= dr; z++) productRow[z] = FZERO;
       for (var i = 0; i <= dd; i++){
         var idx = i + shift;
-        remainder[idx] = (remainder[idx] || FZERO).sub(coef.mul(divisor[i]));
+        var term = coef.mul(divisor[i]);
+        productRow[idx] = term;
+        remainder[idx] = (remainder[idx] || FZERO).sub(term);
       }
+
+      var resultRow = [];
+      for (var k2 = 0; k2 < dr; k2++) resultRow[k2] = remainder[k2] || FZERO;
+
+      steps.push({ leadDegree: dr, quotientDegree: shift, coef: coef, productRow: productRow, resultRow: resultRow });
     }
     var maxQDeg = Math.max(dd >= 0 ? (fracDegreeOf(dividend) - dd) : 0, 0);
     for (var k = 0; k <= maxQDeg; k++) if (!quotient[k]) quotient[k] = FZERO;
-    return { quotient: quotient, remainder: remainder };
+    return { quotient: quotient, remainder: remainder, steps: steps };
+  }
+
+  function polyDivideFraction(dividend, divisor){
+    var r = polyDivideFractionSteps(dividend, divisor);
+    return { quotient: r.quotient, remainder: r.remainder };
+  }
+
+  // ---------- 直式除法步驟畫面：把分數多項式陣列排成一般代數式文字 ----------
+  function fracTermHTML(fracCoef, degree, isFirst){
+    var neg = fracCoef.n < 0;
+    var abs = neg ? new Fraction(-fracCoef.n, fracCoef.d) : fracCoef;
+    var isOne = abs.n === 1 && abs.d === 1;
+    var coefStr = (isOne && degree !== 0) ? '' : (abs.d === 1 ? String(abs.n) : ('(' + abs.n + '/' + abs.d + ')'));
+    var varStr = degree === 0 ? '' : (degree === 1 ? 'x' : ('x<sup>' + degree + '</sup>'));
+    var signHTML = isFirst
+      ? (neg ? '<span class="sign neg">-</span>' : '')
+      : ('<span class="sign ' + (neg ? 'neg' : 'pos') + '">' + (neg ? '-' : '+') + '</span>');
+    return signHTML + '<span class="term">' + coefStr + varStr + '</span>';
+  }
+
+  function formatFracPoly(fracArr){
+    var html = '';
+    var isFirst = true;
+    for (var d = fracArr.length - 1; d >= 0; d--){
+      if (fracArr[d] && !fracArr[d].isZero()){
+        html += fracTermHTML(fracArr[d], d, isFirst);
+        isFirst = false;
+      }
+    }
+    return html === '' ? '<span class="term">0</span>' : html;
+  }
+
+  // 畫出課本常見的長除法直式：商寫在上面，依序消去領先項、把差額跟下一項合併
+  function longDivisionTableauHTML(p){
+    var meta = p.divMeta;
+    var dividendDeg = meta.quotientDeg + meta.divisorDeg;
+    var divisorDeg = meta.divisorDeg;
+    var N = dividendDeg + 1;
+
+    var dividendFrac = toFractionArray(termsToArray(p.A), N);
+    var divisorFrac = toFractionArray(termsToArray(p.B), divisorDeg + 1);
+    var dr = polyDivideFractionSteps(dividendFrac, divisorFrac);
+
+    function colStart(deg){ return (dividendDeg - deg) + 2; } // +1 進位、+1 讓出左側除式欄
+
+    var rows = '';
+    rows += '<div class="ld-cell ld-quotient" style="grid-row:1; grid-column:2 / -1;">' + formatFracPoly(dr.quotient) + '</div>';
+    rows += '<div class="ld-cell ld-divisor" style="grid-row:2; grid-column:1;">' + formatFracPoly(divisorFrac) + '</div>';
+    rows += '<div class="ld-cell ld-dividend" style="grid-row:2; grid-column:2 / -1;">' + formatFracPoly(dividendFrac) + '</div>';
+
+    var gridRow = 3;
+    dr.steps.forEach(function(step){
+      var startCol = colStart(step.leadDegree);
+      var spanCols = divisorDeg + 1;
+      rows += '<div class="ld-cell ld-product" style="grid-row:' + gridRow + '; grid-column:' + startCol + ' / span ' + spanCols + ';">' + formatFracPoly(step.productRow) + '</div>';
+      gridRow++;
+      rows += '<div class="ld-line" style="grid-row:' + gridRow + '; grid-column:' + startCol + ' / span ' + spanCols + ';"></div>';
+      gridRow++;
+      rows += '<div class="ld-cell ld-result" style="grid-row:' + gridRow + '; grid-column:' + (startCol + 1) + ' / -1;">' + formatFracPoly(step.resultRow) + '</div>';
+      gridRow++;
+    });
+
+    return '<div class="ld-grid" style="grid-template-columns: auto repeat(' + N + ', minmax(40px, 1fr));">' + rows + '</div>';
   }
 
   function weightedTopDegree(){
@@ -1386,45 +1492,22 @@
     return rows;
   }
 
-  function divRowsHTML(p){
-    var meta = p.divMeta;
-    var divisorFrac = termsToArray(p.B).map(function(v){ return F(v); });
-    var dividendFrac = termsToArray(p.A).map(function(v){ return F(v); });
-
-    var quotientFull = [FZERO, FZERO, FZERO, FZERO];
-    for (var qd = 0; qd <= meta.quotientDeg; qd++) quotientFull[qd] = meta.quotient[qd] || FZERO;
-    var remainderFull = [FZERO, FZERO, FZERO, FZERO];
-    for (var rd = 0; rd <= meta.remainderDeg; rd++) remainderFull[rd] = meta.remainder[rd] || FZERO;
-
-    var bq = [FZERO, FZERO, FZERO, FZERO];
-    for (var i = 0; i <= 3; i++){
-      for (var j = 0; j <= 3; j++){
-        if (i + j <= 3) bq[i + j] = bq[i + j].add(divisorFrac[i].mul(quotientFull[j]));
-      }
-    }
-    var verifySum = [];
-    for (var k = 0; k <= 3; k++) verifySum[k] = bq[k].add(remainderFull[k]);
-
-    var rows = '';
-    rows += buildAlignRow('被除式 A(x)', dividendFrac, null);
-    rows += buildAlignRow('除式 B(x)', divisorFrac, null);
-    rows += buildAlignRow('商 Q(x)', quotientFull, null, 'step-row');
-    rows += buildAlignRow('除式 × 商', bq, null, 'step-row');
-    rows += buildAlignRow('＋ 餘式 R(x)', remainderFull, null, 'step-row');
-    rows += '<tr class="sum-row"><th>總和（應等於 A）</th>' +
-      [3,2,1,0].map(function(d){ return '<td>' + verifySum[d] + '</td>'; }).join('') +
-      '</tr>';
-    return rows;
-  }
-
   function openModal(p){
-    document.getElementById('modalAlignBody').innerHTML =
-      p.op === '×' ? mulRowsHTML(p) : (p.op === '÷' ? divRowsHTML(p) : diagnosticRowsHTML(p));
+    var isDiv = p.op === '÷';
+    document.getElementById('modalTableWrap').hidden = isDiv;
+    document.getElementById('modalDivTableauWrap').hidden = !isDiv;
+
+    if (isDiv){
+      document.getElementById('modalDivTableauWrap').innerHTML = longDivisionTableauHTML(p);
+    } else {
+      document.getElementById('modalAlignBody').innerHTML = p.op === '×' ? mulRowsHTML(p) : diagnosticRowsHTML(p);
+    }
+
     var note;
     if (p.op === '×'){
       note = '重點：把次數較低的那個多項式，每一項分別乘過去被乘數的全部項（次方相加＝新次方），每一列乘完再對齊次方加總，別漏乘任何一項。';
-    } else if (p.op === '÷'){
-      note = '重點：多項式除法可以用「被除式 ＝ 除式 × 商 ＋ 餘式」驗算，餘式的次方一定要比除式低。算出來的商或餘式若不是整數，要化成最簡分數。';
+    } else if (isDiv){
+      note = '重點：每一輪用除式乘以商的新一項，湊出跟領先項一樣的次方消去它，差額跟下一項合併，繼續往下除，直到次方比除式低為止。';
     } else if (p.op === '-'){
       note = '重點：算 A－B 時不能直接抄 B 的係數，要先把 B 每一項的正負號反過來（上表已示範），再對齊次方相加，缺項一樣要補 0。';
     } else {
