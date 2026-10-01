@@ -750,8 +750,10 @@
     text-align:right;
     padding-right:16px;
     border-right:3px solid var(--text);
+    align-self:end;
   }
-  .ld-dividend{ border-top:3px solid var(--text); padding-top:6px; }
+  .ld-bracket-line{ border-top:3px solid var(--text); height:0; align-self:start; margin-top:-4px; }
+  .ld-dividend{ align-self:end; padding-top:10px; }
   .ld-product{ color:var(--text-dim); }
   .ld-line{ border-top:3px solid var(--accent-3); height:0; align-self:start; }
   .ld-result{ color:var(--text); font-weight:700; }
@@ -1075,20 +1077,42 @@
 
     function colStart(deg){ return (dividendDeg - deg) + 2; } // +1 進位、+1 讓出左側除式欄
 
+    // 每一項各自放進自己次方對應的欄位，不要整列當成一串文字——
+    // 不然係數位數一多（例如 12x 比 6x 寬），後面的項目就會跟上一列的同次方項錯開。
+    function emitTerms(gridRow, fracArr, topDeg, bottomDeg, mapDegToCol, extraClass){
+      var html = '';
+      var isFirst = true;
+      for (var d = topDeg; d >= bottomDeg; d--){
+        var val = fracArr[d];
+        if (val && !val.isZero()){
+          html += '<div class="ld-cell ' + (extraClass || '') + '" style="grid-row:' + gridRow + '; grid-column:' + mapDegToCol(d) + ';">' +
+            fracTermHTML(val, d, isFirst) + '</div>';
+          isFirst = false;
+        }
+      }
+      if (isFirst){
+        html += '<div class="ld-cell ' + (extraClass || '') + '" style="grid-row:' + gridRow + '; grid-column:' + mapDegToCol(bottomDeg) + ';">0</div>';
+      }
+      return html;
+    }
+
     var rows = '';
-    rows += '<div class="ld-cell ld-quotient" style="grid-row:1; grid-column:2 / -1;">' + formatFracPoly(dr.quotient) + '</div>';
+
+    // 商：每一項對齊「它那一步會消去的領先次方」欄位，跟下面對應的乘積列同一欄起算
+    rows += emitTerms(1, dr.quotient, meta.quotientDeg, 0, function(qd){ return colStart(qd + divisorDeg); }, 'ld-quotient');
+
     rows += '<div class="ld-cell ld-divisor" style="grid-row:2; grid-column:1;">' + formatFracPoly(divisorFrac) + '</div>';
-    rows += '<div class="ld-cell ld-dividend" style="grid-row:2; grid-column:2 / -1;">' + formatFracPoly(dividendFrac) + '</div>';
+    rows += emitTerms(2, dividendFrac, dividendDeg, 0, colStart, 'ld-dividend');
+    rows += '<div class="ld-bracket-line" style="grid-row:2; grid-column:2 / -1;"></div>';
 
     var gridRow = 3;
     dr.steps.forEach(function(step){
-      var startCol = colStart(step.leadDegree);
-      var spanCols = divisorDeg + 1;
-      rows += '<div class="ld-cell ld-product" style="grid-row:' + gridRow + '; grid-column:' + startCol + ' / span ' + spanCols + ';">' + formatFracPoly(step.productRow) + '</div>';
+      var topD = step.leadDegree, bottomD = step.leadDegree - divisorDeg;
+      rows += emitTerms(gridRow, step.productRow, topD, bottomD, colStart, 'ld-product');
       gridRow++;
-      rows += '<div class="ld-line" style="grid-row:' + gridRow + '; grid-column:' + startCol + ' / span ' + spanCols + ';"></div>';
+      rows += '<div class="ld-line" style="grid-row:' + gridRow + '; grid-column:' + colStart(topD) + ' / span ' + (divisorDeg + 1) + ';"></div>';
       gridRow++;
-      rows += '<div class="ld-cell ld-result" style="grid-row:' + gridRow + '; grid-column:' + (startCol + 1) + ' / -1;">' + formatFracPoly(step.resultRow) + '</div>';
+      rows += emitTerms(gridRow, step.resultRow, topD - 1, 0, colStart, 'ld-result');
       gridRow++;
     });
 
