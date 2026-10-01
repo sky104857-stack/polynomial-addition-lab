@@ -757,6 +757,8 @@
   .ld-product{ color:var(--text-dim); }
   .ld-line{ border-top:3px solid var(--accent-3); height:0; align-self:start; }
   .ld-result{ color:var(--text); font-weight:700; }
+  .ld-grid .ld-zero .term,
+  .ld-grid .ld-zero .sign{ color:var(--zero-fill); }
 
   @media (max-width:560px){
     .modal-box{ padding:28px 18px 24px; }
@@ -1079,19 +1081,16 @@
 
     // 每一項各自放進自己次方對應的欄位，不要整列當成一串文字——
     // 不然係數位數一多（例如 12x 比 6x 寬），後面的項目就會跟上一列的同次方項錯開。
+    // 每個次方欄位都要畫出來，就算係數是 0 也要明確顯示「0x」，
+    // 呼應整個網頁強調的「缺項補零」概念，而不是悄悄跳過那一欄。
     function emitTerms(gridRow, fracArr, topDeg, bottomDeg, mapDegToCol, extraClass){
       var html = '';
-      var isFirst = true;
       for (var d = topDeg; d >= bottomDeg; d--){
-        var val = fracArr[d];
-        if (val && !val.isZero()){
-          html += '<div class="ld-cell ' + (extraClass || '') + '" style="grid-row:' + gridRow + '; grid-column:' + mapDegToCol(d) + ';">' +
-            fracTermHTML(val, d, isFirst) + '</div>';
-          isFirst = false;
-        }
-      }
-      if (isFirst){
-        html += '<div class="ld-cell ' + (extraClass || '') + '" style="grid-row:' + gridRow + '; grid-column:' + mapDegToCol(bottomDeg) + ';">0</div>';
+        var val = fracArr[d] || FZERO;
+        var isFirst = (d === topDeg);
+        var cls = (extraClass || '') + (val.isZero() ? ' ld-zero' : '');
+        html += '<div class="ld-cell ' + cls + '" style="grid-row:' + gridRow + '; grid-column:' + mapDegToCol(d) + ';">' +
+          fracTermHTML(val, d, isFirst) + '</div>';
       }
       return html;
     }
