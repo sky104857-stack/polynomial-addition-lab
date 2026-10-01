@@ -27,11 +27,14 @@
     --success-soft:rgba(63,224,165,0.14);
     --danger:#ff5d7a;
     --danger-soft:rgba(255,93,122,0.14);
+    --accent-3:#b48cff;
+    --accent-3-soft:rgba(180,140,255,0.14);
     --zero-fill:#ffb454;
     color-scheme: dark;
   }
 
   *{ box-sizing:border-box; }
+  [hidden]{ display:none !important; }
 
   html,body{
     margin:0;
@@ -204,8 +207,46 @@
     color:#ffd9a0;
     box-shadow:0 0 16px rgba(255,180,84,0.22) inset;
   }
+  .mode-btn.active[data-mode="div"]{
+    background:linear-gradient(135deg, rgba(180,140,255,0.26), rgba(180,140,255,0.07));
+    border-color:rgba(180,140,255,0.45);
+    color:#e3d6ff;
+    box-shadow:0 0 16px rgba(180,140,255,0.22) inset;
+  }
   @media (max-width:420px){
     .mode-btn{ font-size:11px; padding:9px 4px; }
+  }
+
+  /* ---------- Difficulty row (division only) ---------- */
+  .diff-row{
+    display:flex;
+    gap:8px;
+    padding:6px;
+    border:1px solid rgba(180,140,255,0.25);
+    background:rgba(180,140,255,0.05);
+    border-radius:12px;
+  }
+  .diff-row[hidden]{ display:none; }
+  .diff-btn{
+    flex:1;
+    border:1px solid transparent;
+    background:transparent;
+    color:var(--text-dim);
+    font-family:'Chakra Petch', sans-serif;
+    font-weight:600;
+    font-size:12px;
+    letter-spacing:0.04em;
+    padding:8px 6px;
+    border-radius:8px;
+    cursor:pointer;
+    transition:background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  .diff-btn:hover{ color:var(--text); }
+  .diff-btn:focus-visible{ outline:2px solid var(--accent-3); outline-offset:2px; }
+  .diff-btn.active{
+    background:rgba(180,140,255,0.2);
+    border-color:rgba(180,140,255,0.5);
+    color:#e3d6ff;
   }
 
   /* ---------- Tip toggle ---------- */
@@ -370,6 +411,12 @@
     background:radial-gradient(circle at 32% 28%, rgba(255,180,84,0.28), rgba(6,10,22,0.92));
     box-shadow:0 0 20px rgba(255,180,84,0.55), inset 0 0 14px rgba(255,180,84,0.25);
   }
+  .op-badge.divide{
+    border-color:var(--accent-3);
+    color:#e3d6ff;
+    background:radial-gradient(circle at 32% 28%, rgba(180,140,255,0.28), rgba(6,10,22,0.92));
+    box-shadow:0 0 20px rgba(180,140,255,0.55), inset 0 0 14px rgba(180,140,255,0.25);
+  }
 
   /* ---------- Answer inputs ---------- */
   .answer-block{
@@ -420,6 +467,62 @@
   .coef-cell input::-webkit-outer-spin-button,
   .coef-cell input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
   .coef-cell input[type=number]{ -moz-appearance:textfield; }
+
+  /* ---------- Division answer area ---------- */
+  .div-answer-group + .div-answer-group{ margin-top:16px; }
+  .div-answer-group-label{
+    font-family:'Chakra Petch', sans-serif;
+    font-size:12px;
+    letter-spacing:0.08em;
+    color:var(--accent-3);
+    margin:0 0 8px;
+  }
+  .frac-grid{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .frac-cell{ flex:1 1 70px; min-width:70px; display:flex; flex-direction:column; gap:6px; }
+  .frac-cell label{
+    text-align:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12.5px;
+    color:var(--text-dim);
+  }
+  .frac-cell input{
+    width:100%;
+    background:rgba(6,10,22,0.7);
+    border:1.5px solid rgba(180,140,255,0.25);
+    border-radius:8px;
+    color:#e3d6ff;
+    font-family:'JetBrains Mono', monospace;
+    font-size:17px;
+    font-weight:700;
+    text-align:center;
+    padding:10px 4px;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  .frac-cell input:focus{
+    outline:none;
+    border-color:var(--accent-3);
+    box-shadow:0 0 0 3px rgba(180,140,255,0.2);
+  }
+  .frac-cell input.is-correct{ border-color:var(--success); box-shadow:0 0 0 3px var(--success-soft); }
+  .frac-cell input.is-wrong{ border-color:var(--danger); box-shadow:0 0 0 3px var(--danger-soft); }
+  .frac-hint{
+    min-height:14px;
+    text-align:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:var(--danger);
+    letter-spacing:0.02em;
+  }
+  .frac-format-tip{
+    margin:10px 0 0;
+    font-size:11.5px;
+    color:var(--text-faint);
+    line-height:1.5;
+  }
 
   .actions{
     display:flex;
@@ -677,18 +780,27 @@
     <button class="mode-btn" id="modeAdd" type="button" role="tab" aria-selected="false" data-mode="add">＋ 只練加法</button>
     <button class="mode-btn" id="modeSub" type="button" role="tab" aria-selected="false" data-mode="sub">－ 只練減法</button>
     <button class="mode-btn" id="modeMul" type="button" role="tab" aria-selected="false" data-mode="mul">× 只練乘法</button>
+    <button class="mode-btn" id="modeDiv" type="button" role="tab" aria-selected="false" data-mode="div">÷ 只練除法</button>
   </nav>
 
+  <nav class="diff-row" id="diffRow" role="tablist" aria-label="除法難度切換" hidden>
+    <button class="diff-btn active" id="diffEasy" type="button" role="tab" aria-selected="true" data-diff="easy">易・二次÷一次</button>
+    <button class="diff-btn" id="diffMedium" type="button" role="tab" aria-selected="false" data-diff="medium">中・含二次÷二次</button>
+    <button class="diff-btn" id="diffHard" type="button" role="tab" aria-selected="false" data-diff="hard">高・含三次÷一次</button>
+  </nav>
+  <p class="frac-format-tip" id="diffHint" hidden>易：商與餘式必定是整數。中：加入二次÷二次，商或餘式可能出現分數。高：再加入三次÷一次。</p>
+
   <button class="tip-toggle" id="tipToggle" type="button" aria-expanded="false" aria-controls="tipPanel">
-    <span>📘</span><span>觀念提示：缺項補零 / 升冪降冪 / 減法變號 / 乘法分配律</span>
+    <span>📘</span><span>觀念提示：缺項補零 / 升冪降冪 / 減法變號 / 乘法分配律 / 除法驗算</span>
   </button>
   <div class="tip-panel" id="tipPanel" hidden>
-    <strong>四個關鍵觀念</strong>
+    <strong>五個關鍵觀念</strong>
     <ol>
       <li><strong>缺項補零：</strong>多項式若少了某個次方項，代表那一項的係數是 0。例如 3x³ − 5，其實是 3x³ ＋ 0x² ＋ 0x − 5，相加減時要把「隱形的 0」找出來對齊。</li>
       <li><strong>升冪 / 降冪：</strong>次方由小到大排叫「升冪」，由大到小排叫「降冪」。題目有時會刻意打亂順序，計算前建議先重新排成降冪，比較不容易對錯次方。</li>
       <li><strong>乘法用分配律：</strong>兩個多項式相乘，要把其中一個多項式的「每一項」分別乘過去另一個多項式的所有項，次方相加＝新次方，乘完再把同次方的結果合併，最容易出錯的地方是漏乘某一項。</li>
       <li><strong>減法要變號：</strong>A − B 不能直接把 B 的係數搬過來，要先把 B 每一項的正負號都反過來（等於 A ＋（−B）），再逐項相加，這是減法題最容易出錯的地方。</li>
+      <li><strong>除法要驗算：</strong>被除式 = 除式 × 商 ＋ 餘式，而且餘式的次方一定要比除式低（例如除式是一次，餘式只能是常數）。商或餘式允許是分數，輸入時用「分子/分母」的格式，例如 -3/2。</li>
     </ol>
   </div>
 
@@ -709,7 +821,7 @@
 
     <div class="answer-block">
       <p class="answer-label" id="answerLabel">請依降冪排列，輸入 A + B 的每一項係數</p>
-      <div class="coef-grid">
+      <div class="coef-grid" id="stdAnswerBlock">
         <div class="coef-cell">
           <label for="coef3">x³ 係數</label>
           <input type="number" inputmode="numeric" id="coef3" placeholder="?">
@@ -730,6 +842,18 @@
           <input type="number" inputmode="numeric" id="coef0" placeholder="?">
           <div class="coef-hint" id="hint0"></div>
         </div>
+      </div>
+
+      <div id="divAnswerBlock" hidden>
+        <div class="div-answer-group">
+          <p class="div-answer-group-label">商 Q(x)</p>
+          <div class="frac-grid" id="divQuotientGrid"></div>
+        </div>
+        <div class="div-answer-group">
+          <p class="div-answer-group-label">餘式 R(x)</p>
+          <div class="frac-grid" id="divRemainderGrid"></div>
+        </div>
+        <p class="frac-format-tip">分數請輸入「分子/分母」，例如 -3/2；整數直接輸入即可，例如 5。</p>
       </div>
 
       <div class="actions">
@@ -775,7 +899,8 @@
     total: 0,
     current: null,
     locked: false,
-    mode: 'mixed' // 'mixed' | 'add' | 'sub' | 'mul'
+    mode: 'mixed', // 'mixed' | 'add' | 'sub' | 'mul' | 'div'
+    divDifficulty: 'easy' // 'easy' | 'medium' | 'hard'
   };
 
   try{
@@ -789,7 +914,12 @@
 
   try{
     var savedMode = localStorage.getItem('polyLabMode');
-    if (savedMode === 'add' || savedMode === 'sub' || savedMode === 'mixed' || savedMode === 'mul') state.mode = savedMode;
+    if (savedMode === 'add' || savedMode === 'sub' || savedMode === 'mixed' || savedMode === 'mul' || savedMode === 'div') state.mode = savedMode;
+  }catch(e){ /* ignore storage errors */ }
+
+  try{
+    var savedDiff = localStorage.getItem('polyLabDivDifficulty');
+    if (savedDiff === 'easy' || savedDiff === 'medium' || savedDiff === 'hard') state.divDifficulty = savedDiff;
   }catch(e){ /* ignore storage errors */ }
 
   function saveStats(){
@@ -803,6 +933,61 @@
   function randInt(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
   function nonZeroCoef(){ var c; do { c = randInt(-9, 9); } while (c === 0); return c; }
   function nonZeroCoefSmall(){ var c; do { c = randInt(-6, 6); } while (c === 0); return c; }
+
+  // ---------- 分數運算（除法用） ----------
+  function gcd(a, b){ a = Math.abs(a); b = Math.abs(b); while (b){ var t = b; b = a % b; a = t; } return a || 1; }
+  function Fraction(n, d){
+    d = (d === undefined) ? 1 : d;
+    if (d < 0){ n = -n; d = -d; }
+    var g = gcd(n, d);
+    this.n = g ? n / g : 0;
+    this.d = g ? d / g : 1;
+  }
+  Fraction.prototype.add = function(o){ return new Fraction(this.n * o.d + o.n * this.d, this.d * o.d); };
+  Fraction.prototype.sub = function(o){ return new Fraction(this.n * o.d - o.n * this.d, this.d * o.d); };
+  Fraction.prototype.mul = function(o){ return new Fraction(this.n * o.n, this.d * o.d); };
+  Fraction.prototype.div = function(o){ return new Fraction(this.n * o.d, this.d * o.n); };
+  Fraction.prototype.isZero = function(){ return this.n === 0; };
+  Fraction.prototype.equals = function(o){ return this.n === o.n && this.d === o.d; };
+  Fraction.prototype.toString = function(){ return this.d === 1 ? String(this.n) : (this.n + '/' + this.d); };
+  function F(n, d){ return new Fraction(n, d); }
+  var FZERO = F(0);
+
+  function parseFractionInput(raw){
+    raw = (raw || '').trim();
+    if (raw === '') return null;
+    var m = raw.match(/^(-?\d+)(?:\/(\d+))?$/);
+    if (!m) return null;
+    var n = parseInt(m[1], 10);
+    var d = m[2] ? parseInt(m[2], 10) : 1;
+    if (d === 0) return null;
+    return new Fraction(n, d);
+  }
+
+  // 一般化多項式除法：dividend/divisor 都是「index=次方」的 Fraction 陣列
+  function fracDegreeOf(arr){
+    for (var i = arr.length - 1; i >= 0; i--){ if (arr[i] && !arr[i].isZero()) return i; }
+    return -1;
+  }
+  function polyDivideFraction(dividend, divisor){
+    var dd = fracDegreeOf(divisor);
+    var remainder = dividend.slice();
+    var quotient = [];
+    while (true){
+      var dr = fracDegreeOf(remainder);
+      if (dr < dd) break;
+      var coef = remainder[dr].div(divisor[dd]);
+      var shift = dr - dd;
+      quotient[shift] = coef;
+      for (var i = 0; i <= dd; i++){
+        var idx = i + shift;
+        remainder[idx] = (remainder[idx] || FZERO).sub(coef.mul(divisor[i]));
+      }
+    }
+    var maxQDeg = Math.max(dd >= 0 ? (fracDegreeOf(dividend) - dd) : 0, 0);
+    for (var k = 0; k <= maxQDeg; k++) if (!quotient[k]) quotient[k] = FZERO;
+    return { quotient: quotient, remainder: remainder };
+  }
 
   function weightedTopDegree(){
     var r = Math.random();
@@ -822,6 +1007,7 @@
 
   function generateProblem(){
     if (state.mode === 'mul') return generateMultiplicationProblem();
+    if (state.mode === 'div') return generateDivisionProblem();
 
     var topA, topB;
     if (Math.random() < 0.5){
@@ -890,6 +1076,108 @@
     };
   }
 
+  function arrayToTerms(arr){
+    var terms = {};
+    for (var d = 0; d < arr.length; d++){ if (arr[d]) terms[d] = arr[d]; }
+    return terms;
+  }
+
+  function multiplyIntArrays(a, b){
+    var result = [];
+    for (var i = 0; i < a.length; i++){
+      for (var j = 0; j < b.length; j++){
+        var idx = i + j;
+        result[idx] = (result[idx] || 0) + a[i] * b[j];
+      }
+    }
+    return result;
+  }
+
+  function addIntArrays(a, b){
+    var len = Math.max(a.length, b.length);
+    var result = [];
+    for (var i = 0; i < len; i++) result[i] = (a[i] || 0) + (b[i] || 0);
+    return result;
+  }
+
+  function toFractionArray(intArr, len){
+    var out = [];
+    for (var i = 0; i < len; i++) out[i] = F(intArr[i] || 0);
+    return out;
+  }
+
+  // 反推建構：先決定商跟餘式（整數），乘回去湊出被除式，保證真正相除後商跟餘式都是整數
+  function constructExactDivision(dividendDeg, divisorDeg){
+    var quotientDeg = dividendDeg - divisorDeg;
+
+    var divisorArr = [];
+    divisorArr[divisorDeg] = nonZeroCoefSmall();
+    for (var i = divisorDeg - 1; i >= 0; i--) divisorArr[i] = (Math.random() < 0.7) ? nonZeroCoefSmall() : 0;
+
+    var quotientArr = [];
+    quotientArr[quotientDeg] = nonZeroCoefSmall();
+    for (var j = quotientDeg - 1; j >= 0; j--) quotientArr[j] = (Math.random() < 0.7) ? nonZeroCoefSmall() : 0;
+
+    var remainderArr = [];
+    for (var k = 0; k < divisorDeg; k++) remainderArr[k] = (Math.random() < 0.6) ? nonZeroCoefSmall() : 0;
+
+    var product = multiplyIntArrays(divisorArr, quotientArr);
+    var dividendArr = addIntArrays(product, remainderArr);
+
+    return { dividendArr: dividendArr, divisorArr: divisorArr };
+  }
+
+  // 正向隨機建構：被除式、除式各自獨立亂數決定，真正相除後商跟餘式可能出現分數
+  function constructRandomDivision(dividendDeg, divisorDeg){
+    var divisorArr = [];
+    divisorArr[divisorDeg] = nonZeroCoefSmall();
+    for (var i = divisorDeg - 1; i >= 0; i--) divisorArr[i] = (Math.random() < 0.7) ? nonZeroCoefSmall() : 0;
+
+    var dividendArr = [];
+    dividendArr[dividendDeg] = nonZeroCoefSmall();
+    for (var j = dividendDeg - 1; j >= 0; j--) dividendArr[j] = (Math.random() < 0.7) ? nonZeroCoefSmall() : 0;
+
+    return { dividendArr: dividendArr, divisorArr: divisorArr };
+  }
+
+  // 只產生「二次÷一次」「二次÷二次」「三次÷一次」，絕不出現二次÷二次以外的同次方組合
+  function generateDivisionProblem(){
+    var combos;
+    if (state.divDifficulty === 'easy'){
+      combos = [[2, 1, 'exact']];
+    } else if (state.divDifficulty === 'medium'){
+      combos = [[2, 1, 'exact'], [2, 2, 'random']];
+    } else {
+      combos = [[2, 1, 'exact'], [2, 2, 'random'], [3, 1, 'exact']];
+    }
+    var pick = combos[randInt(0, combos.length - 1)];
+    var dividendDeg = pick[0], divisorDeg = pick[1], kind = pick[2];
+
+    var built = kind === 'exact'
+      ? constructExactDivision(dividendDeg, divisorDeg)
+      : constructRandomDivision(dividendDeg, divisorDeg);
+
+    var dividendFrac = toFractionArray(built.dividendArr, dividendDeg + 1);
+    var divisorFrac = toFractionArray(built.divisorArr, divisorDeg + 1);
+    var result = polyDivideFraction(dividendFrac, divisorFrac);
+
+    var dividendTerms = arrayToTerms(built.dividendArr);
+    var divisorTerms = arrayToTerms(built.divisorArr);
+
+    return {
+      op: '÷',
+      A: dividendTerms, B: divisorTerms,
+      orderA: pickOrder(dividendTerms), orderB: pickOrder(divisorTerms),
+      divMeta: {
+        divisorDeg: divisorDeg,
+        quotientDeg: dividendDeg - divisorDeg,
+        remainderDeg: divisorDeg - 1,
+        quotient: result.quotient,
+        remainder: result.remainder
+      }
+    };
+  }
+
   function pickOrder(terms){
     var degrees = Object.keys(terms).map(Number).sort(function(a,b){ return b - a; });
     var mode = Math.random();
@@ -923,6 +1211,39 @@
     return signHTML + '<span class="term">' + coefStr + varStr + '</span>';
   }
 
+  function rangeDesc(top){
+    var arr = [];
+    for (var d = top; d >= 0; d--) arr.push(d);
+    return arr;
+  }
+
+  function buildFracInputs(containerId, idPrefix, degrees){
+    var container = document.getElementById(containerId);
+    container.innerHTML = '';
+    degrees.forEach(function(d){
+      var labelHTML = d === 0 ? '常數項' : (d === 1 ? 'x¹ 係數' : ('x<sup>' + d + '</sup> 係數'));
+      var wrap = document.createElement('div');
+      wrap.className = 'frac-cell';
+      var lab = document.createElement('label');
+      lab.setAttribute('for', idPrefix + d);
+      lab.innerHTML = labelHTML;
+      var input = document.createElement('input');
+      input.type = 'text';
+      input.inputMode = 'text';
+      input.autocomplete = 'off';
+      input.id = idPrefix + d;
+      input.placeholder = '?';
+      input.addEventListener('keydown', function(e){ if (e.key === 'Enter') handleSubmit(); });
+      var hint = document.createElement('div');
+      hint.className = 'frac-hint';
+      hint.id = idPrefix + d + 'hint';
+      wrap.appendChild(lab);
+      wrap.appendChild(input);
+      wrap.appendChild(hint);
+      container.appendChild(wrap);
+    });
+  }
+
   function renderPoly(elId, terms, order){
     var html = '';
     if (order.label) html += '<span class="order-flag">' + order.label + '</span>';
@@ -939,30 +1260,52 @@
     renderPoly('polyB', p.B, p.orderB);
 
     var opBadge = document.getElementById('opBadge');
-    var opGlyph = p.op === '+' ? '+' : (p.op === '-' ? '−' : '×');
+    var opGlyph = p.op === '+' ? '+' : (p.op === '-' ? '−' : (p.op === '×' ? '×' : '÷'));
     opBadge.textContent = opGlyph;
     opBadge.classList.toggle('minus', p.op === '-');
     opBadge.classList.toggle('times', p.op === '×');
+    opBadge.classList.toggle('divide', p.op === '÷');
 
-    var panelVerb = p.op === '+' ? '相加' : (p.op === '-' ? '相減' : '相乘');
+    var panelVerb = p.op === '+' ? '相加' : (p.op === '-' ? '相減' : (p.op === '×' ? '相乘' : '相除'));
     document.getElementById('panelTitleText').textContent = '輸入資料：兩個多項式' + panelVerb;
-    document.getElementById('answerLabel').textContent = p.op === '×'
-      ? '請依降冪排列，輸入 A × B 乘積的每一項係數'
-      : '請依降冪排列，輸入 A ' + (p.op === '+' ? '＋' : '－') + ' B 的每一項係數';
 
-    ['coef3','coef2','coef1','coef0'].forEach(function(id, i){
-      var el = document.getElementById(id);
-      el.value = '';
-      el.classList.remove('is-correct','is-wrong');
-      el.disabled = false;
-      document.getElementById(['hint3','hint2','hint1','hint0'][i]).textContent = '';
-    });
+    var stdBlock = document.getElementById('stdAnswerBlock');
+    var divBlock = document.getElementById('divAnswerBlock');
+
+    if (p.op === '÷'){
+      document.getElementById('answerLabel').textContent = '請算出商 Q(x) 與餘式 R(x)（分數請用「分子/分母」格式）';
+      stdBlock.hidden = true;
+      divBlock.hidden = false;
+      buildFracInputs('divQuotientGrid', 'divQ', rangeDesc(p.divMeta.quotientDeg));
+      buildFracInputs('divRemainderGrid', 'divR', rangeDesc(p.divMeta.remainderDeg));
+    } else {
+      stdBlock.hidden = false;
+      divBlock.hidden = true;
+      document.getElementById('answerLabel').textContent = p.op === '×'
+        ? '請依降冪排列，輸入 A × B 乘積的每一項係數'
+        : '請依降冪排列，輸入 A ' + (p.op === '+' ? '＋' : '－') + ' B 的每一項係數';
+
+      ['coef3','coef2','coef1','coef0'].forEach(function(id, i){
+        var el = document.getElementById(id);
+        el.value = '';
+        el.classList.remove('is-correct','is-wrong');
+        el.disabled = false;
+        document.getElementById(['hint3','hint2','hint1','hint0'][i]).textContent = '';
+      });
+    }
+
     document.getElementById('feedback').hidden = true;
     closeModal();
     document.getElementById('submitBtn').disabled = false;
     document.getElementById('nextBtn').disabled = true;
     state.locked = false;
-    document.getElementById('coef3').focus();
+
+    if (p.op === '÷'){
+      var firstDivInput = divBlock.querySelector('input');
+      if (firstDivInput) firstDivInput.focus();
+    } else {
+      document.getElementById('coef3').focus();
+    }
   }
 
   function updateStats(){
@@ -1043,11 +1386,45 @@
     return rows;
   }
 
+  function divRowsHTML(p){
+    var meta = p.divMeta;
+    var divisorFrac = termsToArray(p.B).map(function(v){ return F(v); });
+    var dividendFrac = termsToArray(p.A).map(function(v){ return F(v); });
+
+    var quotientFull = [FZERO, FZERO, FZERO, FZERO];
+    for (var qd = 0; qd <= meta.quotientDeg; qd++) quotientFull[qd] = meta.quotient[qd] || FZERO;
+    var remainderFull = [FZERO, FZERO, FZERO, FZERO];
+    for (var rd = 0; rd <= meta.remainderDeg; rd++) remainderFull[rd] = meta.remainder[rd] || FZERO;
+
+    var bq = [FZERO, FZERO, FZERO, FZERO];
+    for (var i = 0; i <= 3; i++){
+      for (var j = 0; j <= 3; j++){
+        if (i + j <= 3) bq[i + j] = bq[i + j].add(divisorFrac[i].mul(quotientFull[j]));
+      }
+    }
+    var verifySum = [];
+    for (var k = 0; k <= 3; k++) verifySum[k] = bq[k].add(remainderFull[k]);
+
+    var rows = '';
+    rows += buildAlignRow('被除式 A(x)', dividendFrac, null);
+    rows += buildAlignRow('除式 B(x)', divisorFrac, null);
+    rows += buildAlignRow('商 Q(x)', quotientFull, null, 'step-row');
+    rows += buildAlignRow('除式 × 商', bq, null, 'step-row');
+    rows += buildAlignRow('＋ 餘式 R(x)', remainderFull, null, 'step-row');
+    rows += '<tr class="sum-row"><th>總和（應等於 A）</th>' +
+      [3,2,1,0].map(function(d){ return '<td>' + verifySum[d] + '</td>'; }).join('') +
+      '</tr>';
+    return rows;
+  }
+
   function openModal(p){
-    document.getElementById('modalAlignBody').innerHTML = p.op === '×' ? mulRowsHTML(p) : diagnosticRowsHTML(p);
+    document.getElementById('modalAlignBody').innerHTML =
+      p.op === '×' ? mulRowsHTML(p) : (p.op === '÷' ? divRowsHTML(p) : diagnosticRowsHTML(p));
     var note;
     if (p.op === '×'){
       note = '重點：把次數較低的那個多項式，每一項分別乘過去被乘數的全部項（次方相加＝新次方），每一列乘完再對齊次方加總，別漏乘任何一項。';
+    } else if (p.op === '÷'){
+      note = '重點：多項式除法可以用「被除式 ＝ 除式 × 商 ＋ 餘式」驗算，餘式的次方一定要比除式低。算出來的商或餘式若不是整數，要化成最簡分數。';
     } else if (p.op === '-'){
       note = '重點：算 A－B 時不能直接抄 B 的係數，要先把 B 每一項的正負號反過來（上表已示範），再對齊次方相加，缺項一樣要補 0。';
     } else {
@@ -1063,8 +1440,83 @@
     document.getElementById('modalBackdrop').hidden = true;
   }
 
+  function handleDivSubmit(p){
+    var qDegrees = rangeDesc(p.divMeta.quotientDeg);
+    var rDegrees = rangeDesc(p.divMeta.remainderDeg);
+    var qValues = [], rValues = [];
+    var incomplete = false;
+
+    qDegrees.forEach(function(d){
+      var f = parseFractionInput(document.getElementById('divQ' + d).value);
+      if (f === null) incomplete = true;
+      qValues.push(f);
+    });
+    rDegrees.forEach(function(d){
+      var f = parseFractionInput(document.getElementById('divR' + d).value);
+      if (f === null) incomplete = true;
+      rValues.push(f);
+    });
+
+    if (incomplete){
+      var fbEarly = document.getElementById('feedback');
+      fbEarly.hidden = false;
+      fbEarly.className = 'feedback bad';
+      document.getElementById('feedbackHead').textContent = '資料不完整或格式錯誤';
+      document.getElementById('feedbackBody').textContent = '每個欄位都要填寫；整數直接輸入，分數請用「分子/分母」格式（例如 -3/2）。';
+      return;
+    }
+
+    state.locked = true;
+    document.getElementById('submitBtn').disabled = true;
+
+    var correctFlags = [];
+    qDegrees.forEach(function(d, i){
+      var correctVal = p.divMeta.quotient[d] || FZERO;
+      var ok = qValues[i].equals(correctVal);
+      correctFlags.push(ok);
+      var el = document.getElementById('divQ' + d);
+      el.classList.add(ok ? 'is-correct' : 'is-wrong');
+      el.disabled = true;
+      document.getElementById('divQ' + d + 'hint').textContent = ok ? '' : ('正確：' + correctVal.toString());
+    });
+    rDegrees.forEach(function(d, i){
+      var correctVal = p.divMeta.remainder[d] || FZERO;
+      var ok = rValues[i].equals(correctVal);
+      correctFlags.push(ok);
+      var el = document.getElementById('divR' + d);
+      el.classList.add(ok ? 'is-correct' : 'is-wrong');
+      el.disabled = true;
+      document.getElementById('divR' + d + 'hint').textContent = ok ? '' : ('正確：' + correctVal.toString());
+    });
+
+    var allCorrect = correctFlags.every(Boolean);
+
+    state.total += 1;
+    if (allCorrect){ state.streak += 1; state.correct += 1; } else { state.streak = 0; }
+    saveStats();
+    updateStats();
+
+    var fb = document.getElementById('feedback');
+    fb.hidden = false;
+    if (allCorrect){
+      fb.className = 'feedback ok';
+      document.getElementById('feedbackHead').textContent = '校準成功 ✓';
+      document.getElementById('feedbackBody').textContent = '商與餘式都正確，次方關係也沒問題。系統已記錄本次連勝。';
+    } else {
+      fb.className = 'feedback bad';
+      document.getElementById('feedbackHead').textContent = '偵測到誤差 ✗';
+      document.getElementById('feedbackBody').textContent = '錯誤欄位旁已標出正確答案，完整驗算過程請見彈出視窗。';
+      openModal(p);
+    }
+
+    var nextBtn = document.getElementById('nextBtn');
+    nextBtn.disabled = true;
+    setTimeout(function(){ nextBtn.disabled = false; }, allCorrect ? 500 : 700);
+  }
+
   function handleSubmit(){
     if (state.locked || !state.current) return;
+    if (state.current.op === '÷'){ handleDivSubmit(state.current); return; }
     var ids = ['coef3','coef2','coef1','coef0'];
     var hintIds = ['hint3','hint2','hint1','hint0'];
     var degrees = [3,2,1,0];
@@ -1134,12 +1586,25 @@
     setTimeout(function(){ nextBtn.disabled = false; }, allCorrect ? 500 : 700);
   }
 
-  var MODE_BUTTONS = [['modeMixed','mixed'], ['modeAdd','add'], ['modeSub','sub'], ['modeMul','mul']];
+  var MODE_BUTTONS = [['modeMixed','mixed'], ['modeAdd','add'], ['modeSub','sub'], ['modeMul','mul'], ['modeDiv','div']];
+  var DIFF_BUTTONS = [['diffEasy','easy'], ['diffMedium','medium'], ['diffHard','hard']];
 
   function syncModeButtons(){
     MODE_BUTTONS.forEach(function(pair){
       var btn = document.getElementById(pair[0]);
       var isActive = pair[1] === state.mode;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-selected', String(isActive));
+    });
+    var isDiv = state.mode === 'div';
+    document.getElementById('diffRow').hidden = !isDiv;
+    document.getElementById('diffHint').hidden = !isDiv;
+  }
+
+  function syncDiffButtons(){
+    DIFF_BUTTONS.forEach(function(pair){
+      var btn = document.getElementById(pair[0]);
+      var isActive = pair[1] === state.divDifficulty;
       btn.classList.toggle('active', isActive);
       btn.setAttribute('aria-selected', String(isActive));
     });
@@ -1153,13 +1618,27 @@
     renderProblem();
   }
 
+  function setDifficulty(diff){
+    if (state.divDifficulty === diff) return;
+    state.divDifficulty = diff;
+    try{ localStorage.setItem('polyLabDivDifficulty', diff); }catch(e){ /* ignore storage errors */ }
+    syncDiffButtons();
+    if (state.mode === 'div') renderProblem();
+  }
+
   document.getElementById('modeMixed').addEventListener('click', function(){ setMode('mixed'); });
   document.getElementById('modeAdd').addEventListener('click', function(){ setMode('add'); });
   document.getElementById('modeSub').addEventListener('click', function(){ setMode('sub'); });
   document.getElementById('modeMul').addEventListener('click', function(){ setMode('mul'); });
+  document.getElementById('modeDiv').addEventListener('click', function(){ setMode('div'); });
 
-  // 套用剛載入時從 localStorage 還原的模式，讓選單按鈕外觀與實際模式一致
+  document.getElementById('diffEasy').addEventListener('click', function(){ setDifficulty('easy'); });
+  document.getElementById('diffMedium').addEventListener('click', function(){ setDifficulty('medium'); });
+  document.getElementById('diffHard').addEventListener('click', function(){ setDifficulty('hard'); });
+
+  // 套用剛載入時從 localStorage 還原的模式與難度，讓按鈕外觀與實際狀態一致
   syncModeButtons();
+  syncDiffButtons();
 
   document.getElementById('submitBtn').addEventListener('click', handleSubmit);
   document.getElementById('nextBtn').addEventListener('click', renderProblem);
