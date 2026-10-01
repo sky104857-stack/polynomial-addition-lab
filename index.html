@@ -161,6 +161,7 @@
   /* ---------- Mode nav ---------- */
   .mode-nav{
     display:flex;
+    flex-wrap:wrap;
     gap:8px;
     padding:6px;
     border:1px solid var(--panel-border-soft);
@@ -168,7 +169,8 @@
     border-radius:12px;
   }
   .mode-btn{
-    flex:1;
+    flex:1 1 42%;
+    min-width:84px;
     border:1px solid transparent;
     background:transparent;
     color:var(--text-dim);
@@ -195,6 +197,12 @@
     border-color:rgba(255,93,122,0.4);
     color:#ffd7de;
     box-shadow:0 0 16px rgba(255,93,122,0.22) inset;
+  }
+  .mode-btn.active[data-mode="mul"]{
+    background:linear-gradient(135deg, rgba(255,180,84,0.26), rgba(255,180,84,0.07));
+    border-color:rgba(255,180,84,0.45);
+    color:#ffd9a0;
+    box-shadow:0 0 16px rgba(255,180,84,0.22) inset;
   }
   @media (max-width:420px){
     .mode-btn{ font-size:11px; padding:9px 4px; }
@@ -356,6 +364,12 @@
     background:radial-gradient(circle at 32% 28%, rgba(255,93,122,0.26), rgba(6,10,22,0.92));
     box-shadow:0 0 20px rgba(255,93,122,0.55), inset 0 0 14px rgba(255,93,122,0.25);
   }
+  .op-badge.times{
+    border-color:var(--accent-2);
+    color:#ffd9a0;
+    background:radial-gradient(circle at 32% 28%, rgba(255,180,84,0.28), rgba(6,10,22,0.92));
+    box-shadow:0 0 20px rgba(255,180,84,0.55), inset 0 0 14px rgba(255,180,84,0.25);
+  }
 
   /* ---------- Answer inputs ---------- */
   .answer-block{
@@ -508,7 +522,8 @@
     color:var(--accent-strong);
     font-weight:700;
   }
-  table.align-table tr.neg-row td, table.align-table tr.neg-row th{
+  table.align-table tr.neg-row td, table.align-table tr.neg-row th,
+  table.align-table tr.step-row td, table.align-table tr.step-row th{
     color:var(--accent-2);
     font-style:italic;
     border-top:1px dashed var(--panel-border-soft);
@@ -661,16 +676,18 @@
     <button class="mode-btn active" id="modeMixed" type="button" role="tab" aria-selected="true" data-mode="mixed">⚡ 加減混合</button>
     <button class="mode-btn" id="modeAdd" type="button" role="tab" aria-selected="false" data-mode="add">＋ 只練加法</button>
     <button class="mode-btn" id="modeSub" type="button" role="tab" aria-selected="false" data-mode="sub">－ 只練減法</button>
+    <button class="mode-btn" id="modeMul" type="button" role="tab" aria-selected="false" data-mode="mul">× 只練乘法</button>
   </nav>
 
   <button class="tip-toggle" id="tipToggle" type="button" aria-expanded="false" aria-controls="tipPanel">
-    <span>📘</span><span>觀念提示：缺項補零 / 升冪降冪 / 減法變號</span>
+    <span>📘</span><span>觀念提示：缺項補零 / 升冪降冪 / 減法變號 / 乘法分配律</span>
   </button>
   <div class="tip-panel" id="tipPanel" hidden>
-    <strong>三個關鍵觀念</strong>
+    <strong>四個關鍵觀念</strong>
     <ol>
       <li><strong>缺項補零：</strong>多項式若少了某個次方項，代表那一項的係數是 0。例如 3x³ − 5，其實是 3x³ ＋ 0x² ＋ 0x − 5，相加減時要把「隱形的 0」找出來對齊。</li>
       <li><strong>升冪 / 降冪：</strong>次方由小到大排叫「升冪」，由大到小排叫「降冪」。題目有時會刻意打亂順序，計算前建議先重新排成降冪，比較不容易對錯次方。</li>
+      <li><strong>乘法用分配律：</strong>兩個多項式相乘，要把其中一個多項式的「每一項」分別乘過去另一個多項式的所有項，次方相加＝新次方，乘完再把同次方的結果合併，最容易出錯的地方是漏乘某一項。</li>
       <li><strong>減法要變號：</strong>A − B 不能直接把 B 的係數搬過來，要先把 B 每一項的正負號都反過來（等於 A ＋（−B）），再逐項相加，這是減法題最容易出錯的地方。</li>
     </ol>
   </div>
@@ -758,7 +775,7 @@
     total: 0,
     current: null,
     locked: false,
-    mode: 'mixed' // 'mixed' | 'add' | 'sub'
+    mode: 'mixed' // 'mixed' | 'add' | 'sub' | 'mul'
   };
 
   try{
@@ -772,7 +789,7 @@
 
   try{
     var savedMode = localStorage.getItem('polyLabMode');
-    if (savedMode === 'add' || savedMode === 'sub' || savedMode === 'mixed') state.mode = savedMode;
+    if (savedMode === 'add' || savedMode === 'sub' || savedMode === 'mixed' || savedMode === 'mul') state.mode = savedMode;
   }catch(e){ /* ignore storage errors */ }
 
   function saveStats(){
@@ -785,6 +802,7 @@
 
   function randInt(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
   function nonZeroCoef(){ var c; do { c = randInt(-9, 9); } while (c === 0); return c; }
+  function nonZeroCoefSmall(){ var c; do { c = randInt(-6, 6); } while (c === 0); return c; }
 
   function weightedTopDegree(){
     var r = Math.random();
@@ -803,6 +821,8 @@
   }
 
   function generateProblem(){
+    if (state.mode === 'mul') return generateMultiplicationProblem();
+
     var topA, topB;
     if (Math.random() < 0.5){
       topA = 3; topB = weightedTopDegree();
@@ -825,6 +845,48 @@
     return {
       A: A, B: B, op: op, answer: answer,
       orderA: pickOrder(A), orderB: pickOrder(B)
+    };
+  }
+
+  // 只產生「一次×一次」或「二次×一次」的乘法題，絕不出現二次×二次
+  function generateFactor(topDegree){
+    var terms = {};
+    terms[topDegree] = nonZeroCoefSmall();
+    for (var d = topDegree - 1; d >= 0; d--){
+      if (Math.random() < 0.65) terms[d] = nonZeroCoefSmall();
+    }
+    return terms;
+  }
+
+  function termsToArray(terms){
+    var arr = [0,0,0,0];
+    Object.keys(terms).forEach(function(d){ arr[+d] = terms[d]; });
+    return arr;
+  }
+
+  function generateMultiplicationProblem(){
+    var combo = Math.random() < 0.5 ? [1,1] : [2,1];
+    if (Math.random() < 0.5) combo.reverse(); // 讓二次項有時排A、有時排B
+    var topA = combo[0], topB = combo[1];
+
+    var A = generateFactor(topA);
+    var B = generateFactor(topB);
+    var Aarr = termsToArray(A), Barr = termsToArray(B);
+
+    var answer = [0,0,0,0];
+    for (var i = 0; i <= 3; i++){
+      for (var j = 0; j <= 3; j++){
+        if (i + j <= 3) answer[i + j] += Aarr[i] * Barr[j];
+      }
+    }
+
+    // 兩個因式中一定有一個次數 <= 1（題型限制保證），用它當「分配者」做直式分配展開
+    var PIsA = topA <= 1;
+
+    return {
+      A: A, B: B, op: '×', answer: answer,
+      orderA: pickOrder(A), orderB: pickOrder(B),
+      mulMeta: { PIsA: PIsA }
     };
   }
 
@@ -877,12 +939,16 @@
     renderPoly('polyB', p.B, p.orderB);
 
     var opBadge = document.getElementById('opBadge');
-    opBadge.textContent = p.op === '+' ? '+' : '−';
+    var opGlyph = p.op === '+' ? '+' : (p.op === '-' ? '−' : '×');
+    opBadge.textContent = opGlyph;
     opBadge.classList.toggle('minus', p.op === '-');
+    opBadge.classList.toggle('times', p.op === '×');
 
-    var opSymbol = p.op === '+' ? '＋' : '－';
-    document.getElementById('panelTitleText').textContent = '輸入資料：兩個多項式' + (p.op === '+' ? '相加' : '相減');
-    document.getElementById('answerLabel').textContent = '請依降冪排列，輸入 A ' + opSymbol + ' B 的每一項係數';
+    var panelVerb = p.op === '+' ? '相加' : (p.op === '-' ? '相減' : '相乘');
+    document.getElementById('panelTitleText').textContent = '輸入資料：兩個多項式' + panelVerb;
+    document.getElementById('answerLabel').textContent = p.op === '×'
+      ? '請依降冪排列，輸入 A × B 乘積的每一項係數'
+      : '請依降冪排列，輸入 A ' + (p.op === '+' ? '＋' : '－') + ' B 的每一項係數';
 
     ['coef3','coef2','coef1','coef0'].forEach(function(id, i){
       var el = document.getElementById(id);
@@ -939,11 +1005,55 @@
     return rows;
   }
 
+  function formatTermPlain(coef, degree){
+    var abs = Math.abs(coef);
+    var sign = coef < 0 ? '－' : '';
+    var coefStr = (abs === 1 && degree !== 0) ? '' : String(abs);
+    var varStr = degree === 0 ? '' : 'x';
+    return sign + coefStr + varStr;
+  }
+
+  function mulRowsHTML(p){
+    var meta = p.mulMeta;
+    var Pterms = meta.PIsA ? p.A : p.B;
+    var Qterms = meta.PIsA ? p.B : p.A;
+    var Qlabel = meta.PIsA ? 'B' : 'A';
+    var Qarr = termsToArray(Qterms);
+
+    var rows = '';
+    rows += buildAlignRow('多項式 ' + Qlabel + '（被乘數）', Qarr, null);
+
+    var Pdegrees = Object.keys(Pterms).map(Number).sort(function(a, b){ return b - a; });
+    var partialSum = [0,0,0,0];
+    Pdegrees.forEach(function(pd){
+      var coef = Pterms[pd];
+      var rowArr = [0,0,0,0];
+      for (var qd = 0; qd <= 3; qd++){
+        if (qd + pd <= 3) rowArr[qd + pd] += Qarr[qd] * coef;
+      }
+      for (var k = 0; k <= 3; k++) partialSum[k] += rowArr[k];
+      var label = '×（' + formatTermPlain(coef, pd) + '）';
+      rows += buildAlignRow(label, rowArr, null, 'step-row');
+    });
+
+    var sumLabel = Pdegrees.length > 1 ? '總和（A×B）' : '結果（A×B）';
+    rows += '<tr class="sum-row"><th>' + sumLabel + '</th>' +
+      [3,2,1,0].map(function(d){ return '<td>' + partialSum[d] + '</td>'; }).join('') +
+      '</tr>';
+    return rows;
+  }
+
   function openModal(p){
-    document.getElementById('modalAlignBody').innerHTML = diagnosticRowsHTML(p);
-    document.getElementById('modalNote').innerHTML = p.op === '-'
-      ? '重點：算 A－B 時不能直接抄 B 的係數，要先把 B 每一項的正負號反過來（上表已示範），再對齊次方相加，缺項一樣要補 0。'
-      : '重點：把兩式同次方的係數對齊，缺項記得補 0，再逐項相加。';
+    document.getElementById('modalAlignBody').innerHTML = p.op === '×' ? mulRowsHTML(p) : diagnosticRowsHTML(p);
+    var note;
+    if (p.op === '×'){
+      note = '重點：把次數較低的那個多項式，每一項分別乘過去被乘數的全部項（次方相加＝新次方），每一列乘完再對齊次方加總，別漏乘任何一項。';
+    } else if (p.op === '-'){
+      note = '重點：算 A－B 時不能直接抄 B 的係數，要先把 B 每一項的正負號反過來（上表已示範），再對齊次方相加，缺項一樣要補 0。';
+    } else {
+      note = '重點：把兩式同次方的係數對齊，缺項記得補 0，再逐項相加。';
+    }
+    document.getElementById('modalNote').innerHTML = note;
     var backdrop = document.getElementById('modalBackdrop');
     backdrop.hidden = false;
     document.getElementById('modalNextBtn').focus();
@@ -1008,7 +1118,9 @@
     if (allCorrect){
       fb.className = 'feedback ok';
       document.getElementById('feedbackHead').textContent = '校準成功 ✓';
-      document.getElementById('feedbackBody').textContent = '次方對齊正確，缺項也成功補零。系統已記錄本次連勝。';
+      document.getElementById('feedbackBody').textContent = p.op === '×'
+        ? '每一項都正確展開並合併同類項。系統已記錄本次連勝。'
+        : '次方對齊正確，缺項也成功補零。系統已記錄本次連勝。';
     } else {
       fb.className = 'feedback bad';
       document.getElementById('feedbackHead').textContent = '偵測到誤差 ✗';
@@ -1022,30 +1134,32 @@
     setTimeout(function(){ nextBtn.disabled = false; }, allCorrect ? 500 : 700);
   }
 
+  var MODE_BUTTONS = [['modeMixed','mixed'], ['modeAdd','add'], ['modeSub','sub'], ['modeMul','mul']];
+
+  function syncModeButtons(){
+    MODE_BUTTONS.forEach(function(pair){
+      var btn = document.getElementById(pair[0]);
+      var isActive = pair[1] === state.mode;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-selected', String(isActive));
+    });
+  }
+
   function setMode(mode){
     if (state.mode === mode) return;
     state.mode = mode;
     try{ localStorage.setItem('polyLabMode', mode); }catch(e){ /* ignore storage errors */ }
-    [['modeMixed','mixed'], ['modeAdd','add'], ['modeSub','sub']].forEach(function(pair){
-      var btn = document.getElementById(pair[0]);
-      var isActive = pair[1] === mode;
-      btn.classList.toggle('active', isActive);
-      btn.setAttribute('aria-selected', String(isActive));
-    });
+    syncModeButtons();
     renderProblem();
   }
 
   document.getElementById('modeMixed').addEventListener('click', function(){ setMode('mixed'); });
   document.getElementById('modeAdd').addEventListener('click', function(){ setMode('add'); });
   document.getElementById('modeSub').addEventListener('click', function(){ setMode('sub'); });
+  document.getElementById('modeMul').addEventListener('click', function(){ setMode('mul'); });
 
   // 套用剛載入時從 localStorage 還原的模式，讓選單按鈕外觀與實際模式一致
-  [['modeMixed','mixed'], ['modeAdd','add'], ['modeSub','sub']].forEach(function(pair){
-    var btn = document.getElementById(pair[0]);
-    var isActive = pair[1] === state.mode;
-    btn.classList.toggle('active', isActive);
-    btn.setAttribute('aria-selected', String(isActive));
-  });
+  syncModeButtons();
 
   document.getElementById('submitBtn').addEventListener('click', handleSubmit);
   document.getElementById('nextBtn').addEventListener('click', renderProblem);
